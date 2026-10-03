@@ -12,6 +12,7 @@ Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ort
 | Dil | TypeScript |
 | Stil | Tailwind CSS 4 (Figma'dan alınan tasarım token'larıyla) |
 | İkonlar | lucide-react |
+| Harita | Leaflet + OpenStreetMap (ücretsiz, API anahtarı gerekmez) |
 | Yayın | Vercel |
 | Veritabanı (planlanan) | Supabase (PostgreSQL + Auth) |
 
@@ -39,7 +40,8 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 | `/sohbetler` | Takım sohbetleri | Statik (SSG) |
 | `/sohbetler/[id]` | Sohbet odası | SSR |
 | `/profil` | Oyuncu kartı, radar grafiği, tema değiştirme | Statik (SSG) |
-| `/kesfet` | Harita (yer tutucu) | Statik (SSG) |
+| `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSG + harita istemcide (CSR) |
+| `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
 
 Lig tabloları eklendiğinde **ISR** (belirli aralıklarla yenilenen statik sayfa) kullanılacak.
 
@@ -51,11 +53,13 @@ src/
 │   ├── (tabs)/          # Alt menülü sekmeler: /, /kesfet, /sohbetler, /profil
 │   ├── mac/             # Maç detayı, dizilim, oluşturma
 │   ├── sohbetler/[id]/  # Sohbet odası
+│   ├── saha/[id]/       # Saha Konumu (harita)
 │   ├── hosgeldin/       # Tanıtım ekranları
 │   ├── giris/           # Giriş ekranı
 │   ├── loading.tsx      # Açılış (splash) ekranı
 │   └── globals.css      # Tasarım token'ları: renkler, açık/koyu tema
 ├── components/          # Tekrar kullanılan bileşenler
+│   └── map/             # Harita (yalnızca tarayıcıda yüklenir)
 └── lib/
     ├── types.ts         # Veri tipleri
     ├── mock-data.ts     # Geçici örnek veri
@@ -76,15 +80,16 @@ Arayüz, ekip arkadaşımızın Figma tasarımlarından birebir koda aktarıldı
 
 ## Yol haritası
 
-- [x] Proje iskeleti, Git deposu (1. hafta)
+- [x] Proje iskeleti, Git deposu ([1. hafta](docs/hafta-01-ilk-git-deposu.md))
 - [x] Figma ekranlarının koda aktarılması
 - [ ] Supabase ile kimlik doğrulama ve veritabanı
 - [ ] REST API (`/api/matches`, `/api/events`)
-- [ ] Harita (Leaflet + OpenStreetMap)
+- [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
 - [ ] S.O.S (Joker) sistemi
 - [ ] Kullanıcı ve yönetici dashboard'u
 - [ ] Mahalle ligleri (ISR)
-- [ ] PWA desteği
+- [x] PWA bildirimi ve ikonlar (ana ekrana ekleme)
+- [ ] Çevrimdışı çalışma (service worker)
 
 ## Ekip
 
