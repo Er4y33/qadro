@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
+/*
+ * Qadro tasarım token'ları
+ * Figma'daki açık ve koyu tema ekranlarından alınmıştır.
+ * Renk değiştirmek gerekirse yalnızca bu dosya güncellenir.
+ */
+
+/* Açık tema */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-2: #f1f4f9;
+  --line: #e3e8ef;
+  --fg: #0f172a;
+  --muted: #64748b;
+  --accent: #3b82f6; /* Açık temada seçili spor çipi mavi */
+  --pitch: #ffffff;
+  --page: #e9edf4; /* Masaüstünde telefon kolonunun dışı */
+}
+
+/* Koyu tema (Figma'daki ana tema) */
+[data-theme="dark"] {
+  --bg: #0b1120;
+  --surface: #172033;
+  --surface-2: #1e293b;
+  --line: #2a3650;
+  --fg: #f8fafc;
+  --muted: #94a3b8;
+  --accent: #10b981; /* Koyu temada seçili spor çipi yeşil */
+  --pitch: #0f1a2b;
+  --page: #05080f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-pitch: var(--pitch);
+  --color-page: var(--page);
+
+  /* Temadan bağımsız marka renkleri */
+  --color-primary: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-violet: #8b5cf6;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--page);
+  color: var(--fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Koyu temadaki çapraz şerit deseni */
+.qadro-stripes {
+  background-image: repeating-linear-gradient(
+    -55deg,
+    transparent 0 140px,
+    color-mix(in srgb, var(--fg) 2.5%, transparent) 140px 260px
+  );
 }
