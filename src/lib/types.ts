@@ -28,8 +28,21 @@ export interface LineupSlot {
   y: number;
 }
 
+export interface Venue {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  /** Kullanıcının konumuna uzaklık. Şimdilik sabit, ileride tarayıcı konumundan hesaplanacak. */
+  distanceKm: number;
+  driveMinutes: number;
+  amenities: string[];
+}
+
 export interface Match {
   id: string;
+  venueId: string;
   title: string;
   sport: Sport;
   format: string;

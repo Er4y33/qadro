@@ -2,7 +2,7 @@
  * Geçici örnek veri. Veritabanı (Supabase) bağlanınca bu dosyanın yerini API çağrıları alacak.
  * İsimler ve mekânlar Figma tasarımlarındaki örneklerle aynıdır.
  */
-import type { ChatMessage, ChatPreview, Match, Player } from "./types";
+import type { ChatMessage, ChatPreview, Match, Player, Venue } from "./types";
 
 export const players: Record<string, Player> = {
   atahan: { id: "atahan", name: "Atahan", initials: "MA", color: "bg-primary", level: 14, rating: 4.8 },
@@ -31,6 +31,54 @@ export const currentUser = {
   ],
 };
 
+/** Örnek tesisler. Adresler ve koordinatlar temsilidir. */
+export const venues: Venue[] = [
+  {
+    id: "elbistan-sentetik",
+    name: "Elbistan Sentetik Saha",
+    address: "Orhangazi Mah. Spor Cad. No: 12",
+    lat: 38.2052,
+    lng: 37.1975,
+    distanceKm: 2.4,
+    driveMinutes: 8,
+    amenities: ["Ücretsiz Otopark", "Sıcak Duş", "Kiralık Ayakkabı"],
+  },
+  {
+    id: "kmaras-merkez",
+    name: "Kahramanmaraş Merkez Saha",
+    address: "Dulkadiroğlu, Kahramanmaraş",
+    lat: 37.5858,
+    lng: 36.9371,
+    distanceKm: 6.1,
+    driveMinutes: 14,
+    amenities: ["Otopark", "Soyunma Odası"],
+  },
+  {
+    id: "elbistan-salon",
+    name: "Elbistan Spor Salonu",
+    address: "Elbistan, Kahramanmaraş",
+    lat: 38.2008,
+    lng: 37.1886,
+    distanceKm: 3.2,
+    driveMinutes: 10,
+    amenities: ["Kapalı Alan", "Duş"],
+  },
+  {
+    id: "kmaras-kapali",
+    name: "Merkez Kapalı Salon",
+    address: "Onikişubat, Kahramanmaraş",
+    lat: 37.5768,
+    lng: 36.9147,
+    distanceKm: 7.4,
+    driveMinutes: 17,
+    amenities: ["Kapalı Alan", "Tribün"],
+  },
+];
+
+export function getVenue(id: string): Venue | undefined {
+  return venues.find((v) => v.id === id);
+}
+
 const filler = (n: number): Player[] =>
   Array.from({ length: n }, (_, i) => ({
     id: `p${i}`,
@@ -44,6 +92,7 @@ const filler = (n: number): Player[] =>
 export const matches: Match[] = [
   {
     id: "cuma-aksami-hali-saha",
+    venueId: "elbistan-sentetik",
     title: "Cuma Akşamı Halı Saha",
     sport: "futbol",
     format: "7v7",
@@ -70,6 +119,7 @@ export const matches: Match[] = [
   },
   {
     id: "turnuva-antrenmani",
+    venueId: "kmaras-merkez",
     title: "Turnuva Antrenmanı",
     sport: "futbol",
     format: "5v5",
@@ -89,6 +139,7 @@ export const matches: Match[] = [
   },
   {
     id: "elbistan-basket",
+    venueId: "elbistan-salon",
     title: "Elbistan Basket Turnuvası",
     sport: "basketbol",
     format: "3v3",
@@ -108,6 +159,7 @@ export const matches: Match[] = [
   },
   {
     id: "plaj-voleybolu",
+    venueId: "kmaras-kapali",
     title: "Akşam Voleybolu",
     sport: "voleybol",
     format: "6v6",

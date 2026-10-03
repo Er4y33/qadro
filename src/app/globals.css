@@ -75,3 +75,15 @@ body {
     color-mix(in srgb, var(--fg) 2.5%, transparent) 140px 260px
   );
 }
+
+/* Harita: koyu temada OpenStreetMap karolarını tersine çevirerek koyu harita elde edilir */
+[data-theme="dark"] .qadro-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+.qadro-map {
+  background: var(--surface-2);
+  font-family: var(--font-sans);
+}
+.qadro-map .leaflet-control-attribution {
+  font-size: 9px;
+}

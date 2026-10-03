@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CircleCheck, MapPin, MessageSquare, Plus, Share2, X } from "lucide-react";
+import { CircleCheck, MessageSquare, Plus, Share2, X } from "lucide-react";
 import { Avatar, ScreenHeader, cn } from "@/components/ui";
-import { getMatch } from "@/lib/mock-data";
+import { QadroMap } from "@/components/map/QadroMap";
+import { getMatch, getVenue } from "@/lib/mock-data";
 import { SPORT_LABELS } from "@/lib/types";
 
 /*
@@ -22,6 +23,7 @@ export default async function MatchDetailPage({
   const { katildi } = await searchParams;
   const match = getMatch(id);
   if (!match) notFound();
+  const venue = getVenue(match.venueId);
 
   const joined = katildi === "1";
   const openSlots = match.capacity - match.joined - (joined ? 1 : 0);
@@ -40,16 +42,17 @@ export default async function MatchDetailPage({
         />
 
         <div className="px-5">
-          {/* Harita yer tutucusu; ileride Leaflet ile gerçek harita gelecek */}
-          <Link
-            href="/kesfet"
-            className="relative flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-line bg-surface-2"
-          >
-            <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 50" aria-hidden>
-              <path d="M0 38 Q 40 30 100 12" stroke="var(--surface)" strokeWidth="5" fill="none" />
-            </svg>
-            <MapPin size={34} className="relative fill-danger text-danger [&>circle]:fill-white" />
-          </Link>
+          {/* Küçük, dokunulamayan harita önizlemesi; dokununca Saha Konumu ekranı açılır */}
+          {venue && (
+            <Link
+              href={`/saha/${venue.id}?mac=${match.id}`}
+              aria-label={`${venue.name} konumunu aç`}
+              className="relative block h-40 overflow-hidden rounded-2xl border border-line"
+            >
+              <QadroMap center={[venue.lat, venue.lng]} zoom={15} interactive={false} pins={[{ id: venue.id, lat: venue.lat, lng: venue.lng }]} />
+              <span className="absolute inset-0 z-[500]" />
+            </Link>
+          )}
 
           <p className="mt-5 text-sm font-semibold text-success">
             {SPORT_LABELS[match.sport]} • {match.format}
