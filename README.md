@@ -76,7 +76,7 @@ Oyunlaştırma kuralları `src/lib/gamification.ts` dosyasındadır ve **D6 çer
 
 ## Tasarım
 
-Arayüz, ekip arkadaşımızın Figma tasarımlarından birebir koda aktarıldı. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
+Arayüz, Atahan'ın Figma tasarımlarından birebir koda aktarıldı. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
 
 ## Yol haritası
 
@@ -93,5 +93,7 @@ Arayüz, ekip arkadaşımızın Figma tasarımlarından birebir koda aktarıldı
 
 ## Ekip
 
-- Atahan
-- _(ekip arkadaşının adı)_
+| Kişi | Rol |
+|---|---|
+| Eray | Geliştirme |
+| Atahan | UI/UX tasarım (Figma) |
