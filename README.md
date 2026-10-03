@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Qadro
 
-## Getting Started
+**Eksik oyuncu derdine son.** Qadro; futbol, basketbol ve voleybolda eksik oyuncu ya da oynanacak maç bulmayı sağlayan, oyunlaştırılmış bir spor eşleştirme uygulamasıdır.
 
-First, run the development server:
+Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ortak dönem projesidir.
+
+## Teknolojiler
+
+| Katman | Seçim |
+|---|---|
+| Çatı | Next.js 15 (App Router), Node.js |
+| Dil | TypeScript |
+| Stil | Tailwind CSS 4 (Figma'dan alınan tasarım token'larıyla) |
+| İkonlar | lucide-react |
+| Yayın | Vercel |
+| Veritabanı (planlanan) | Supabase (PostgreSQL + Auth) |
+
+## Kurulum
 
 ```bash
+git clone https://github.com/<kullanici-adi>/qadro.git
+cd qadro
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli tasarlandığı için en iyi görünüm tarayıcının mobil görünümündedir (F12 → cihaz simgesi).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Ekranlar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Yol | Ekran | Render stratejisi |
+|---|---|---|
+| `/hosgeldin` | Tanıtım (3 adım) | Statik (SSG) |
+| `/giris` | Giriş | Statik (SSG) |
+| `/` | Ana sayfa, spor filtresi, maç listesi | SSG + istemcide filtre (CSR) |
+| `/mac/[id]` | Maç detayı | **SSR**: kontenjan her istekte güncel |
+| `/mac/[id]/dizilim` | Saha dizilimi ve bölge seçimi | SSR + CSR |
+| `/mac/olustur` | Maç oluşturma formu | CSR |
+| `/sohbetler` | Takım sohbetleri | Statik (SSG) |
+| `/sohbetler/[id]` | Sohbet odası | SSR |
+| `/profil` | Oyuncu kartı, radar grafiği, tema değiştirme | Statik (SSG) |
+| `/kesfet` | Harita (yer tutucu) | Statik (SSG) |
 
-## Learn More
+Lig tabloları eklendiğinde **ISR** (belirli aralıklarla yenilenen statik sayfa) kullanılacak.
 
-To learn more about Next.js, take a look at the following resources:
+## Klasör yapısı
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/                 # Sayfalar (her klasör bir URL)
+│   ├── (tabs)/          # Alt menülü sekmeler: /, /kesfet, /sohbetler, /profil
+│   ├── mac/             # Maç detayı, dizilim, oluşturma
+│   ├── sohbetler/[id]/  # Sohbet odası
+│   ├── hosgeldin/       # Tanıtım ekranları
+│   ├── giris/           # Giriş ekranı
+│   ├── loading.tsx      # Açılış (splash) ekranı
+│   └── globals.css      # Tasarım token'ları: renkler, açık/koyu tema
+├── components/          # Tekrar kullanılan bileşenler
+└── lib/
+    ├── types.ts         # Veri tipleri
+    ├── mock-data.ts     # Geçici örnek veri
+    └── gamification.ts  # XP, seviye ve güvenilirlik kuralları
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Oyunlaştırma
 
-## Deploy on Vercel
+Oyunlaştırma kuralları `src/lib/gamification.ts` dosyasındadır ve **D6 çerçevesine** göre tasarlanmıştır:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **İş hedefi:** Maç dolma oranını artırmak, maça gelmeme (no-show) oranını düşürmek.
+- **Hedef davranışlar:** Maça gelmek, zamanında gelmek, maç sonu değerlendirme yapmak, S.O.S çağrısına yanıt vermek. Her biri XP kazandırır.
+- **Qadro Puanı (güvenilirlik):** Harcanabilir bir para birimi değil, itibar ölçüsüdür. Aşırı gerekçelendirme etkisinden kaçınmak için bilinçli olarak böyle tasarlandı.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tasarım
+
+Arayüz, ekip arkadaşımızın Figma tasarımlarından birebir koda aktarıldı. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
+
+## Yol haritası
+
+- [x] Proje iskeleti, Git deposu (1. hafta)
+- [x] Figma ekranlarının koda aktarılması
+- [ ] Supabase ile kimlik doğrulama ve veritabanı
+- [ ] REST API (`/api/matches`, `/api/events`)
+- [ ] Harita (Leaflet + OpenStreetMap)
+- [ ] S.O.S (Joker) sistemi
+- [ ] Kullanıcı ve yönetici dashboard'u
+- [ ] Mahalle ligleri (ISR)
+- [ ] PWA desteği
+
+## Ekip
+
+- Atahan
+- _(ekip arkadaşının adı)_
