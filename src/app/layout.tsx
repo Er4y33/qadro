@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0b1120",
+  themeColor: "#111827",
 };
 
 // Sayfa çizilmeden önce kayıtlı temayı uygular, böylece açılışta renk sıçraması olmaz.
