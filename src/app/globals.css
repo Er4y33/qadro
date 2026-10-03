@@ -22,12 +22,13 @@
 
 /* Koyu tema (Figma'daki ana tema) */
 [data-theme="dark"] {
-  --bg: #0b1120;
-  --surface: #172033;
-  --surface-2: #1e293b;
-  --line: #2a3650;
-  --fg: #f8fafc;
-  --muted: #94a3b8;
+  /* Figma'dan birebir okunan değerler (Tailwind gray paleti) */
+  --bg: #111827;
+  --surface: #1f2937;
+  --surface-2: #374151;
+  --line: #374151;
+  --fg: #f9fafb;
+  --muted: #9ca3af;
   --accent: #10b981; /* Koyu temada seçili spor çipi yeşil */
   --pitch: #0f1a2b;
   --page: #05080f;
