@@ -17,6 +17,7 @@
   --accent: #3b82f6; /* Açık temada seçili spor çipi mavi */
   --pitch: #ffffff;
   --page: #e9edf4; /* Masaüstünde telefon kolonunun dışı */
+  color-scheme: light;
 }
 
 /* Koyu tema (Figma'daki ana tema) */
@@ -30,6 +31,7 @@
   --accent: #10b981; /* Koyu temada seçili spor çipi yeşil */
   --pitch: #0f1a2b;
   --page: #05080f;
+  color-scheme: dark;
 }
 
 @theme inline {

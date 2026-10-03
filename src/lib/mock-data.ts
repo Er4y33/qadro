@@ -19,15 +19,15 @@ export const currentUser = {
   city: "Kahramanmaraş",
   matchesPlayed: 42,
   mvpAwards: 12,
-  totalXp: 18450,
+  totalXp: 19700,
   /** Radar grafiği için 0–100 arası özellik puanları */
   attributes: [
+    { label: "Kondisyon", value: 88 },
     { label: "Pas", value: 82 },
     { label: "Şut", value: 70 },
     { label: "Defans", value: 64 },
     { label: "Fizik", value: 72 },
     { label: "Taktik", value: 78 },
-    { label: "Kondisyon", value: 88 },
   ],
 };
 
