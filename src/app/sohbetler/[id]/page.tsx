@@ -36,9 +36,9 @@ export default async function ChatRoomPage({ params }: { params: Promise<{ id: s
 
         {chatMessages.map((m) =>
           m.sender === "me" ? (
-            <div key={m.id} className="ml-auto max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm text-white">
+            <div key={m.id} className="ml-auto max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm text-on-primary">
               {m.text}
-              <span className="mt-1 block text-right text-[10px] text-white/70">{m.time}</span>
+              <span className="mt-1 block text-right text-[10px] text-on-primary/60">{m.time}</span>
             </div>
           ) : (
             <div key={m.id} className="flex max-w-[85%] items-start gap-2">
@@ -70,7 +70,7 @@ export default async function ChatRoomPage({ params }: { params: Promise<{ id: s
           <Plus size={22} />
         </button>
         <input placeholder="Mesaj yaz..." className="flex-1 rounded-full border border-line bg-surface px-4 py-2.5 text-sm outline-none" />
-        <button type="submit" aria-label="Gönder" className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white">
+        <button type="submit" aria-label="Gönder" className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary">
           <SendHorizontal size={18} />
         </button>
       </form>

@@ -64,7 +64,7 @@ export default async function VenuePage({
             href={directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-semibold text-white shadow-lg shadow-primary/30"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30"
           >
             <Navigation size={18} /> Yol Tarifi Al
           </a>

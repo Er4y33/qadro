@@ -59,7 +59,7 @@ export default function CreateMatchPage() {
                 onClick={() => pickSport(s)}
                 className={cn(
                   "rounded-xl border py-3 text-sm font-semibold transition",
-                  sport === s ? "border-primary bg-primary text-white" : "border-line bg-surface text-fg",
+                  sport === s ? "border-primary bg-primary text-on-primary" : "border-line bg-surface text-fg",
                 )}
               >
                 {SPORT_LABELS[s]}
@@ -143,7 +143,7 @@ export default function CreateMatchPage() {
         <button
           type="submit"
           form="mac-olustur"
-          className="w-full rounded-xl bg-primary py-3.5 font-semibold text-white shadow-lg shadow-primary/30"
+          className="w-full rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30"
         >
           Devam Et (Saha Seçimi)
         </button>

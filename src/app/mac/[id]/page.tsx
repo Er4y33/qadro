@@ -77,7 +77,7 @@ export default async function MatchDetailPage({
             <Link
               href={`/sohbetler/${match.id}`}
               aria-label="Organizatöre yaz"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary"
             >
               <MessageSquare size={15} />
             </Link>
@@ -121,7 +121,7 @@ export default async function MatchDetailPage({
             <div className="flex gap-3">
               <Link
                 href={`/sohbetler/${match.id}`}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-semibold text-white"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-semibold text-on-primary"
               >
                 <MessageSquare size={18} /> Takım Sohbeti
               </Link>
@@ -136,7 +136,7 @@ export default async function MatchDetailPage({
         ) : (
           <Link
             href={`/mac/${match.id}/dizilim`}
-            className="block rounded-xl bg-primary py-3.5 text-center font-semibold text-white shadow-lg shadow-primary/30"
+            className="block rounded-xl bg-primary py-3.5 text-center font-semibold text-on-primary shadow-lg shadow-primary/30"
           >
             Maça Katıl
           </Link>

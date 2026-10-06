@@ -34,7 +34,7 @@ export default function LoginPage() {
             Şifremi Unuttum?
           </Link>
         </div>
-        <button type="submit" className="w-full rounded-xl bg-primary py-3.5 font-semibold text-white shadow-lg shadow-primary/30">
+        <button type="submit" className="w-full rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30">
           Giriş Yap
         </button>
       </form>

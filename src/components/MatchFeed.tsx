@@ -22,7 +22,7 @@ export function MatchFeed({ matches }: { matches: Match[] }) {
             onClick={() => setSport(s)}
             className={cn(
               "rounded-full border px-4 py-1.5 text-sm font-medium transition",
-              sport === s ? "border-accent bg-accent text-white" : "border-line bg-surface text-fg",
+              sport === s ? "border-accent bg-accent text-on-primary" : "border-line bg-surface text-fg",
             )}
           >
             {SPORT_LABELS[s]}

@@ -27,7 +27,9 @@ export function Avatar({
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white",
+        "relative inline-flex shrink-0 items-center justify-center rounded-full font-semibold",
+        /* Yeşil avatarlarda koyu, diğer renklerde beyaz yazı */
+        /primary|success/.test(player.color) ? "text-on-primary" : "text-white",
         player.color,
         className,
       )}
@@ -37,8 +39,8 @@ export function Avatar({
       {badge !== undefined && (
         <span
           className={cn(
-            "absolute -top-1 -right-2 rounded-full px-1.5 py-px text-[10px] font-bold leading-4 text-white",
-            badgeTone === "warning" ? "bg-warning" : "bg-success",
+            "absolute -top-1 -right-2 rounded-full px-1.5 py-px text-[10px] font-bold leading-4",
+            badgeTone === "warning" ? "bg-warning text-white" : "bg-success text-on-primary",
           )}
         >
           {badge}

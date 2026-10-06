@@ -38,7 +38,7 @@ export function BottomNav() {
         <Link
           href="/mac/olustur"
           aria-label="Maç oluştur"
-          className="absolute -top-7 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40 ring-4 ring-bg"
+          className="absolute -top-7 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg shadow-primary/40 ring-4 ring-bg"
         >
           <Plus size={30} />
         </Link>

@@ -6,11 +6,11 @@ import type { PlayerStats } from "./badges";
 import type { ChatMessage, ChatPreview, Match, Player, Venue } from "./types";
 
 export const players: Record<string, Player> = {
-  atahan: { id: "atahan", name: "Atahan", initials: "MA", color: "bg-primary", level: 14, rating: 4.8 },
+  atahan: { id: "atahan", name: "Atahan", initials: "AT", color: "bg-primary", level: 14, rating: 4.8 },
   ahmet: { id: "ahmet", name: "Ahmet Erdem", initials: "AE", color: "bg-warning", level: 14, rating: 4.8 },
-  can: { id: "can", name: "Can", initials: "CY", color: "bg-primary", level: 11, rating: 4.6 },
-  burak: { id: "burak", name: "Burak", initials: "BK", color: "bg-primary", level: 9, rating: 4.4 },
-  mert: { id: "mert", name: "Mert", initials: "ML", color: "bg-primary", level: 12, rating: 4.7 },
+  can: { id: "can", name: "Can", initials: "CY", color: "bg-info", level: 11, rating: 4.6 },
+  burak: { id: "burak", name: "Burak", initials: "BK", color: "bg-info", level: 9, rating: 4.4 },
+  mert: { id: "mert", name: "Mert", initials: "ML", color: "bg-info", level: 12, rating: 4.7 },
   oguz: { id: "oguz", name: "Oğuz", initials: "OS", color: "bg-warning", level: 16, rating: 4.9 },
 };
 
@@ -96,7 +96,7 @@ const filler = (n: number): Player[] =>
     id: `p${i}`,
     name: `Oyuncu ${i + 1}`,
     initials: "",
-    color: ["bg-primary", "bg-success", "bg-violet", "bg-slate-500"][i % 4],
+    color: ["bg-info", "bg-primary", "bg-violet", "bg-warning"][i % 4],
     level: 5 + i,
     rating: 4.2,
   }));

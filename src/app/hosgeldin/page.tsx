@@ -33,7 +33,7 @@ export default function OnboardingPage() {
   return (
     <main className="flex flex-1 flex-col px-7 pt-6 pb-10">
       <div className="flex justify-end">
-        <Link href="/giris" className={cn("rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white", last && "invisible")}>
+        <Link href="/giris" className={cn("rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary", last && "invisible")}>
           Geç
         </Link>
       </div>
@@ -57,7 +57,7 @@ export default function OnboardingPage() {
           type="button"
           onClick={() => (last ? router.push("/giris") : setI(i + 1))}
           aria-label={last ? "Başla" : "Sonraki"}
-          className={cn("flex h-12 w-14 items-center justify-center rounded-full text-white", last ? "bg-success" : "bg-primary")}
+          className={cn("flex h-12 w-14 items-center justify-center rounded-full text-on-primary", last ? "bg-success" : "bg-primary")}
         >
           {last ? <Check size={22} /> : <ChevronRight size={22} />}
         </button>
@@ -70,7 +70,7 @@ function FieldArt() {
   return (
     <div className="flex h-44 w-44 items-center justify-center rounded-full bg-primary/15 ring-[20px] ring-primary/10">
       <div className="relative h-24 w-36 rounded-[50%] border-4 border-dashed border-primary">
-        <span className="absolute -top-5 -right-4 rounded-full bg-primary px-2.5 py-3 text-[10px] font-bold text-white">Qadro</span>
+        <span className="absolute -top-5 -right-4 rounded-full bg-primary px-2.5 py-3 text-[10px] font-bold text-on-primary">Qadro</span>
       </div>
     </div>
   );

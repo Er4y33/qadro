@@ -25,13 +25,13 @@ export function RadarChart({ data }: { data: { label: string; value: number }[] 
 
       <polygon
         points={polygon((i) => data[i].value / 100)}
-        fill="color-mix(in srgb, #3b82f6 25%, transparent)"
-        stroke="#3b82f6"
+        fill="color-mix(in srgb, #00e676 25%, transparent)"
+        stroke="#00e676"
         strokeWidth={2}
       />
       {data.map((d, i) => {
         const [x, y] = point(i, d.value / 100);
-        return <circle key={d.label} cx={x} cy={y} r={3.5} fill="#3b82f6" />;
+        return <circle key={d.label} cx={x} cy={y} r={3.5} fill="#00e676" />;
       })}
 
       {data.map((d, i) => {

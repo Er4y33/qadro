@@ -8,13 +8,14 @@
 
 /* Açık tema */
 :root {
-  --bg: #f5f7fb;
+  --bg: #f4f6f8;
   --surface: #ffffff;
-  --surface-2: #f1f4f9;
-  --line: #e3e8ef;
-  --fg: #0f172a;
-  --muted: #64748b;
-  --accent: #3b82f6; /* Açık temada seçili spor çipi mavi */
+  --surface-2: #eef1f4;
+  --line: #e1e5ea;
+  --fg: #0f1115;
+  --muted: #5b6472;
+  --primary: #00c46a; /* Açık zeminde okunabilirlik için bir ton koyu yeşil */
+  --accent: var(--primary);
   --pitch: #ffffff;
   --page: #e9edf4; /* Masaüstünde telefon kolonunun dışı */
   color-scheme: light;
@@ -22,16 +23,17 @@
 
 /* Koyu tema (Figma'daki ana tema) */
 [data-theme="dark"] {
-  /* Figma'dan birebir okunan değerler (Tailwind gray paleti) */
-  --bg: #111827;
-  --surface: #1f2937;
-  --surface-2: #374151;
-  --line: #374151;
+  /* Melih'in güncel tasarımından ölçülen değerler (Ekim 2026) */
+  --bg: #0f1115;
+  --surface: #1c2028;
+  --surface-2: #252a34;
+  --line: #2a2f3a;
   --fg: #f9fafb;
   --muted: #9ca3af;
-  --accent: #10b981; /* Koyu temada seçili spor çipi yeşil */
-  --pitch: #0f1a2b;
-  --page: #05080f;
+  --primary: #00e676; /* Qadro neon yeşili */
+  --accent: var(--primary);
+  --pitch: #12141a;
+  --page: #08090c;
   color-scheme: dark;
 }
 
@@ -47,8 +49,11 @@
   --color-page: var(--page);
 
   /* Temadan bağımsız marka renkleri */
-  --color-primary: #3b82f6;
-  --color-success: #10b981;
+  --color-primary: var(--primary);
+  /* Yeşil zemin üstündeki yazı rengi: neon yeşilde beyaz yazı okunmaz */
+  --color-on-primary: #0b0d10;
+  --color-info: #3b82f6;
+  --color-success: var(--primary);
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-violet: #8b5cf6;

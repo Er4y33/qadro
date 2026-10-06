@@ -21,7 +21,7 @@ export default function ChatsPage() {
 
       <div className="mt-5 grid grid-cols-2 rounded-xl bg-surface-2 p-1 text-sm font-medium">
         <button type="button" className="rounded-lg py-2 text-muted">Kişiler</button>
-        <button type="button" className="rounded-lg bg-primary py-2 text-white shadow">Takım Grupları</button>
+        <button type="button" className="rounded-lg bg-primary py-2 text-on-primary shadow">Takım Grupları</button>
       </div>
 
       <label className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-muted">

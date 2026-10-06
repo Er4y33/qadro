@@ -50,7 +50,7 @@ export function LineupPicker({ matchId, lineup }: { matchId: string; lineup: Lin
               <span
                 className={cn(
                   "flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed transition",
-                  selected === z.id ? "border-success bg-success text-white" : "border-danger text-danger",
+                  selected === z.id ? "border-success bg-success text-on-primary" : "border-danger text-danger",
                 )}
               >
                 <Plus size={18} />
@@ -67,7 +67,7 @@ export function LineupPicker({ matchId, lineup }: { matchId: string; lineup: Lin
         {zone ? (
           <Link
             href={`/mac/${matchId}?katildi=1`}
-            className="block rounded-xl bg-success py-3.5 text-center font-semibold text-white shadow-lg shadow-success/30"
+            className="block rounded-xl bg-success py-3.5 text-center font-semibold text-on-primary shadow-lg shadow-success/30"
           >
             {zone.label} Olarak Katıl
           </Link>
