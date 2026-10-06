@@ -19,7 +19,7 @@ Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ort
 ## Kurulum
 
 ```bash
-git clone https://github.com/<kullanici-adi>/qadro.git
+git clone https://github.com/Er4y33/qadro.git
 cd qadro
 npm install
 npm run dev
@@ -76,7 +76,7 @@ Oyunlaştırma kuralları `src/lib/gamification.ts` dosyasındadır ve **D6 çer
 
 ## Tasarım
 
-Arayüz, Atahan'ın Figma tasarımlarından birebir koda aktarıldı. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
+Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıldı. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
 
 ## Yol haritası
 
@@ -95,5 +95,5 @@ Arayüz, Atahan'ın Figma tasarımlarından birebir koda aktarıldı. Renkler `s
 
 | Kişi | Rol |
 |---|---|
-| Eray | Geliştirme |
-| Atahan | UI/UX tasarım (Figma) |
+| Eray Çocuk ([@Er4y33](https://github.com/Er4y33)) | Geliştirme, oyunlaştırma tasarımı |
+| Melih Atahan Akgün | UI/UX tasarım (Figma) |
