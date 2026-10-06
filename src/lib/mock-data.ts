@@ -2,6 +2,7 @@
  * Geçici örnek veri. Veritabanı (Supabase) bağlanınca bu dosyanın yerini API çağrıları alacak.
  * İsimler ve mekânlar Figma tasarımlarındaki örneklerle aynıdır.
  */
+import type { PlayerStats } from "./badges";
 import type { ChatMessage, ChatPreview, Match, Player, Venue } from "./types";
 
 export const players: Record<string, Player> = {
@@ -20,6 +21,17 @@ export const currentUser = {
   matchesPlayed: 42,
   mvpAwards: 12,
   totalXp: 19700,
+  /** Rozet koşulları için istatistikler */
+  stats: {
+    matchesPlayed: 42,
+    onTimeStreak: 12,
+    sosAnswered: 3,
+    ratingsGiven: 31,
+    matchesOrganized: 7,
+    venuesVisited: 4,
+    sportsPlayed: 2,
+    mvpAwards: 12,
+  } satisfies PlayerStats,
   /** Radar grafiği için 0–100 arası özellik puanları */
   attributes: [
     { label: "Kondisyon", value: 88 },

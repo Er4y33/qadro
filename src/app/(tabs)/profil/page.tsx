@@ -5,10 +5,13 @@ import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { currentUser, matches } from "@/lib/mock-data";
 import { levelFromXp } from "@/lib/gamification";
+import { evaluateBadges } from "@/lib/badges";
+import { BadgeGrid } from "@/components/BadgeGrid";
 
 export default function ProfilePage() {
   const { level, current, needed } = levelFromXp(currentUser.totalXp);
   const lastMatch = matches[0];
+  const badges = evaluateBadges(currentUser.stats);
 
   return (
     <div className="relative overflow-hidden px-5 pt-6">
@@ -45,6 +48,11 @@ export default function ProfilePage() {
           label="Güvenilirlik"
         />
         <Stat value={currentUser.mvpAwards} label="MVP Ödülü" />
+      </section>
+
+      <section className="mt-6">
+        <SectionTitle>Rozetler</SectionTitle>
+        <BadgeGrid badges={badges} />
       </section>
 
       <section className="mt-6">
