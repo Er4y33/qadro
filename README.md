@@ -66,6 +66,14 @@ src/
     └── gamification.ts  # XP, seviye ve güvenilirlik kuralları
 ```
 
+## Belgeler
+
+| Belge | Ders |
+|---|---|
+| [Oyunlaştırma entegrasyon rotası](docs/oyunlastirma-rotasi.md) | Oyunlaştırma Uygulamaları |
+| [Web mimarisi](docs/web-mimarisi.md) | Web Programlama |
+| [1. hafta: İlk Git deposu](docs/hafta-01-ilk-git-deposu.md) | Web Programlama |
+
 ## Oyunlaştırma
 
 Oyunlaştırma kuralları `src/lib/gamification.ts` dosyasındadır ve **D6 çerçevesine** göre tasarlanmıştır:
@@ -85,6 +93,7 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [ ] Supabase ile kimlik doğrulama ve veritabanı
 - [ ] REST API (`/api/matches`, `/api/events`)
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
+- [x] Rozet sistemi (8 rozet, profil ekranı)
 - [ ] S.O.S (Joker) sistemi
 - [ ] Kullanıcı ve yönetici dashboard'u
 - [ ] Mahalle ligleri (ISR)
