@@ -78,9 +78,12 @@ export default function ProfilePage() {
             <p className="truncate font-semibold">{lastMatch.title}</p>
             <p className="text-xs text-muted">Dün • {lastMatch.format} • Merkez Saha</p>
           </div>
-          <button type="button" className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+          <Link
+            href={`/mac/${lastMatch.id}/degerlendir`}
+            className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
+          >
             Değerlendir
-          </button>
+          </Link>
         </div>
       </section>
     </div>

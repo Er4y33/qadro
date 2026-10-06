@@ -45,3 +45,18 @@ export function reliabilityScore(joined: number, attended: number): number {
   const rate = (attended + PRIOR_MATCHES * PRIOR_RATE) / (joined + PRIOR_MATCHES);
   return Math.round(rate * 50) / 10; // 0–5 arası, tek ondalık
 }
+
+/**
+ * Maç sonu "Geldi / Gelmedi" oylarından bir oyuncunun maça gelip gelmediğine karar verir.
+ *
+ * Kötüye kullanıma karşı önlem: Tek bir kişinin "Gelmedi" demesi yetmez.
+ * - En az MIN_ATTENDANCE_VOTES oy gerekir; daha azsa karar verilmez (null).
+ * - "Gelmedi" sayılması için oyların yarıdan fazlası "Gelmedi" olmalıdır. Eşitlikte oyuncu lehine karar verilir.
+ */
+export const MIN_ATTENDANCE_VOTES = 3;
+
+export function resolveAttendance(votes: boolean[]): boolean | null {
+  if (votes.length < MIN_ATTENDANCE_VOTES) return null;
+  const absentVotes = votes.filter((attended) => !attended).length;
+  return absentVotes <= votes.length / 2;
+}
