@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { ChevronRight, Star, Trophy } from "lucide-react";
 import { Avatar, SectionTitle } from "@/components/ui";
 import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -50,8 +50,18 @@ export default function ProfilePage() {
         <Stat value={currentUser.mvpAwards} label="MVP Ödülü" />
       </section>
 
+      <Link
+        href="/siralama"
+        className="relative mt-3 flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3"
+      >
+        <Trophy size={20} className="text-primary" />
+        <span className="flex-1 text-sm font-semibold">Şehrin En İyileri</span>
+        <span className="text-xs text-muted">Sıralamanı gör</span>
+        <ChevronRight size={16} className="text-muted" />
+      </Link>
+
       <section className="mt-6">
-        <SectionTitle>Rozetler</SectionTitle>
+        <SectionTitle>Başarımlar</SectionTitle>
         <BadgeGrid badges={badges} />
       </section>
 

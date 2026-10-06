@@ -92,7 +92,7 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [ ] Supabase ile kimlik doğrulama ve veritabanı
 - [ ] REST API (`/api/matches`, `/api/events`)
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
-- [x] Rozet sistemi (8 rozet, profil ekranı)
+- [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
 - [ ] S.O.S (Joker) sistemi
 - [ ] Kullanıcı ve yönetici dashboard'u
 - [ ] Mahalle ligleri (ISR)

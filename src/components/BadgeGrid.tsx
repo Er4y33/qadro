@@ -36,7 +36,7 @@ export function BadgeGrid({ badges }: { badges: BadgeProgress[] }) {
   return (
     <div className="rounded-2xl border border-line bg-surface p-4">
       <p className="mb-3 text-xs text-muted">
-        {earnedCount} / {badges.length} rozet kazanıldı
+        {earnedCount} / {badges.length} başarım kazanıldı
       </p>
 
       <ul className="grid grid-cols-4 gap-3">
