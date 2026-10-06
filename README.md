@@ -50,13 +50,12 @@ Lig tabloları eklendiğinde **ISR** (belirli aralıklarla yenilenen statik sayf
 ```
 src/
 ├── app/                 # Sayfalar (her klasör bir URL)
-│   ├── (tabs)/          # Alt menülü sekmeler: /, /kesfet, /sohbetler, /profil
+│   ├── (tabs)/          # Alt menülü sekmeler: /, /kesfet, /sohbetler, /profil (+ açılış ekranı)
 │   ├── mac/             # Maç detayı, dizilim, oluşturma
 │   ├── sohbetler/[id]/  # Sohbet odası
 │   ├── saha/[id]/       # Saha Konumu (harita)
 │   ├── hosgeldin/       # Tanıtım ekranları
 │   ├── giris/           # Giriş ekranı
-│   ├── loading.tsx      # Açılış (splash) ekranı
 │   └── globals.css      # Tasarım token'ları: renkler, açık/koyu tema
 ├── components/          # Tekrar kullanılan bileşenler
 │   └── map/             # Harita (yalnızca tarayıcıda yüklenir)
