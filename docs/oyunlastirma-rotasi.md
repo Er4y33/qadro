@@ -103,9 +103,10 @@ Hunicke, LeBlanc ve Zubek'in **MDA** (Mekanik – Dinamik – Estetik) çerçeve
 | **1** | XP ve seviye | Maça gelmek | ÖBK: **yetkinlik** | ✅ Kodda (`src/lib/gamification.ts`) |
 | **2** | Güvenilirlik (Qadro Puanı) | Gelmek, zamanında gelmek | ÖBK: **ilişkisellik**, güven | ✅ Kodda |
 | **3** | Rozetler (8 adet) | Davranış çeşitliliği | Hexad, hedef belirleme | ✅ Kodda (`src/lib/badges.ts`, profil ekranı) |
-| **4** | Haftalık oynama serisi | Düzenli katılım | Hook modeli (alışkanlık) | ⏳ Planlandı |
-| **5** | S.O.S (Joker) sistemi | Son dakika eksiğini kapatmak | Malone ve Lepper: **iş birliği** | ⏳ Planlandı |
-| **6** | Mahalle ligleri ve sezonlar | Topluluk içi rekabet | Akış (Flow), ulaşılabilir zorluk | ⏳ Planlandı |
+| **4** | Takımı Değerlendir: Geldi/Gelmedi + övgüler | Gelmek, değerlendirmek | ÖBK: ilişkisellik; Malone ve Lepper: **tanınma** | ✅ Arayüz (`src/components/TeamReview.tsx`), çoğunluk oyu kuralı (`resolveAttendance`) |
+| **5** | S.O.S (Joker) sistemi | Son dakika eksiğini kapatmak | Malone ve Lepper: **iş birliği** | ✅ Arayüz (`/sos`), bildirim gönderimi ⏳ |
+| **6** | Şehrin En İyileri (ilçe bazlı sıralama) | Topluluk içi rekabet | Akış (Flow), ulaşılabilir zorluk | ✅ Arayüz (`/siralama`, ISR) |
+| **6b** | Haftalık oynama serisi ve sezonlar | Düzenli katılım | Hook modeli (alışkanlık) | ⏳ Planlandı |
 | **7** | Dashboard ile ölçüm | – | D6'nın 1. adımındaki ölçütler | ⏳ Planlandı (Web Programlama ile ortak) |
 
 ---
@@ -144,10 +145,22 @@ Maç oluştururken seçilen **minimum seviye** de aynı amaca hizmet eder: "Ne �
 
 ---
 
+### Başarımlar ve Övgüler
+
+İki tür tanınma vardır ve bilinçli olarak ayrı tutulur:
+
+| | Başarım | Övgü |
+|---|---|---|
+| **Kim verir?** | Sistem, davranışa göre | Takım arkadaşı, maç sonunda |
+| **Örnek** | Demir Adam, Kurtarıcı | Kaya Gibi, Centilmen |
+| **Kuram** | Yetkinlik, hedef belirleme | Sosyal tanınma (Malone ve Lepper) |
+| **XP verir mi?** | Hayır | Hayır |
+
 ## 6. Riskler ve Önlemler
 
 | Risk | Önlem |
 |---|---|
+| Bir kişi kötü niyetle "Gelmedi" der | En az 3 oy ve çoğunluk gerekir, eşitlikte oyuncu lehine karar verilir (`resolveAttendance`) ✅ |
 | Arkadaşlar birbirine sürekli 5 yıldız verir | Hep aynı puanı veren hesapların değerlendirme ağırlığı düşürülür *(planlanan)* |
 | Sahte maç açıp XP toplamak | XP yalnızca birden fazla oyuncunun onayladığı maçlarda verilir *(planlanan)* |
 | Yeni kullanıcının tek maçla puanı 0 ya da 5 olur | Güvenilirlik hesabında 5 maçlık nötr başlangıç (`reliabilityScore`) ✅ |

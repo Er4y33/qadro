@@ -96,7 +96,7 @@ Qadro **ikisini birlikte** kullanır. Next.js her sayfa için ayrı strateji se�
 | **SSG** | Static Site Generation | Sunucuda, **build anında** bir kez | `/giris`, `/hosgeldin`, `/saha/[id]` | Varsayılan; dinamik sayfalarda `generateStaticParams()` |
 | **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/mac/[id]`: kontenjan hep güncel olmalı | `export const dynamic = "force-dynamic"` |
 | **CSR** | Client-Side Rendering | **Tarayıcıda**, JavaScript ile | Maç oluşturma formu, harita, spor filtresi | Dosyanın başında `"use client"` |
-| **ISR** | Incremental Static Regeneration | Statik, belirli aralıklarla **arka planda yenilenir** | Mahalle lig tabloları *(planlanan)* | `export const revalidate = 300` |
+| **ISR** | Incremental Static Regeneration | Statik, belirli aralıklarla **arka planda yenilenir** | `/siralama`: Şehrin En İyileri | `export const revalidate = 300` |
 
 Build çıktısında hangi sayfanın hangi stratejiyle üretildiği görülür:
 
@@ -153,4 +153,3 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 - [ ] Supabase: kimlik doğrulama ve PostgreSQL veritabanı
 - [ ] REST API: `POST /api/matches` (201), `GET /api/matches/[id]` (200 / 404)
 - [ ] Olay günlüğü (`user_events`) ve **dashboard**: kullanıcıların yaptıklarının izlenmesi
-- [ ] Mahalle ligleri (ISR)

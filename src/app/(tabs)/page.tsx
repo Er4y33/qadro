@@ -15,14 +15,14 @@ export default function HomePage() {
             <p className="text-lg font-bold">{currentUser.name}!</p>
           </div>
         </Link>
-        <button
-          type="button"
-          aria-label="Bildirimler"
+        <Link
+          href="/bildirimler"
+          aria-label="Bildirimler (3 yeni)"
           className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface"
         >
           <Bell size={18} />
           <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-danger" />
-        </button>
+        </Link>
       </header>
 
       <MatchFeed matches={matches} />

@@ -107,6 +107,16 @@ export default async function MatchDetailPage({
             ))}
           </div>
 
+          {openSlots > 0 && (
+            <Link
+              href={`/sos?mac=${match.id}`}
+              className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-danger/50 bg-danger/10 px-4 py-3"
+            >
+              <span className="text-sm font-semibold">{openSlots} kişi eksik, maç yaklaşıyor mu?</span>
+              <span className="shrink-0 text-xs font-bold whitespace-nowrap text-danger">S.O.S BAŞLAT →</span>
+            </Link>
+          )}
+
           <h2 className="mt-6 mb-2 font-bold">Maç Notu</h2>
           <p className="rounded-xl border border-line bg-surface p-3 text-sm text-muted italic">“{match.note}”</p>
         </div>

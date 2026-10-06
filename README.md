@@ -43,7 +43,10 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 | `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSG + harita istemcide (CSR) |
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
 
-Lig tabloları eklendiğinde **ISR** (belirli aralıklarla yenilenen statik sayfa) kullanılacak.
+| `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
+| `/mac/[id]/degerlendir` | Takımı Değerlendir | SSR + CSR |
+| `/sos` | S.O.S çağrısı | SSR + CSR |
+| `/bildirimler` | Bildirimler | Statik (SSG) |
 
 ## Klasör yapısı
 

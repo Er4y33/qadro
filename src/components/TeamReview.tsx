@@ -166,13 +166,13 @@ function Summary({
 
       <div className="mt-6 w-full rounded-2xl border border-line bg-surface p-4 text-left">
         <p className="text-sm font-bold text-primary">+{xp} XP</p>
-        <p className="mt-3 text-sm font-semibold">{fairPlay.name} başarımı</p>
-        <div className="mt-1 mb-1 flex justify-between text-xs text-muted">
-          <span>{fairPlay.description}</span>
-          <span>
+        <div className="mt-3 flex items-baseline justify-between">
+          <p className="text-sm font-semibold">{fairPlay.name} başarımı</p>
+          <span className="text-xs font-semibold">
             {total} / {fairPlay.target}
           </span>
         </div>
+        <p className="mt-0.5 mb-2 text-xs text-muted">{fairPlay.description}</p>
         <ProgressBar value={total} max={fairPlay.target} tone="primary" />
       </div>
 
