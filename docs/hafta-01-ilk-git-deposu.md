@@ -32,6 +32,7 @@ Commit geçmişini görmek için:
 git log --oneline
 ```
 
-## Depo bağlantısı
+## Bağlantılar
 
-`https://github.com/<kullanici-adi>/qadro`
+- **Depo:** https://github.com/Er4y33/qadro
+- **Canlı site (Vercel):** https://qadro-three.vercel.app/

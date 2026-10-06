@@ -4,6 +4,8 @@
 
 Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ortak dönem projesidir.
 
+🔗 **Canlı site:** [qadro-three.vercel.app](https://qadro-three.vercel.app/)
+
 ## Teknolojiler
 
 | Katman | Seçim |
