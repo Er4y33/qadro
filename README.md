@@ -30,7 +30,7 @@ npm run dev
 
 Ayrı bir veritabanı kurmaya gerek yoktur: ilk açılışta proje klasöründe `.qadro-db/` oluşur ve örnek maçlar eklenir. Sıfırlamak için bu klasörü silmek yeterlidir.
 
-Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli tasarlandığı için en iyi görünüm tarayıcının mobil görünümündedir (F12 → cihaz simgesi).
+Tarayıcıda `http://localhost:3000` adresini açın. Arayüz responsive: telefonda tek kolon ve alt menü, bilgisayarda kenar menülü tam ekran düzen. Telefon görünümünü bilgisayarda denemek için F12 → cihaz simgesi.
 
 ## Ekranlar
 
@@ -108,6 +108,7 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
 - [x] Kullanıcı davranışı dashboard'u (`/panel`)
 - [x] 3 adımlı Maç Oluştur, Tenis branşı
+- [x] Responsive masaüstü düzeni (kenar menü, iki kolonlu sayfalar, bölünmüş giriş ekranı)
 - [x] PWA bildirimi ve ikonlar (ana ekrana ekleme)
 - [ ] Çevrimdışı çalışma (service worker)
 

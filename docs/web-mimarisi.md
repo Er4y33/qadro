@@ -120,6 +120,23 @@ Bu ayrım sayesinde tarayıcıya yalnızca gereken JavaScript gönderilir.
 
 ---
 
+### Responsive (duyarlı) tasarım
+
+Aynı kod, ekran genişliğine göre farklı düzen üretir. Tailwind'in kırılım noktaları CSS **media query**'lerine dönüşür:
+`lg:grid-cols-2` → `@media (width >= 1024px) { grid-template-columns: repeat(2, …) }`.
+
+| Ekran | Genişlik | Düzen |
+|---|---|---|
+| Telefon | < 1024px | 430px tek kolon, altta sekme menüsü (`BottomNav`), eylem düğmeleri ekranın altına sabit |
+| Masaüstü (`lg`) | ≥ 1024px | Solda kenar menü (`DesktopNav`), maç kartları iki sütun, maç detayı ve profil iki kolon, giriş ekranı bölünmüş |
+| Geniş masaüstü (`xl`) | ≥ 1280px | Ana sayfada sağda harita ve özet kartları |
+
+Odaklı akışlar (maç oluşturma, değerlendirme, sohbet, S.O.S) masaüstünde de ortada dar bir kolonda kalır; uzun formlar geniş ekranda okunmaz hale gelmesin diye bilinçli bir tercih (`FocusColumn`, `src/components/AppFrame.tsx`).
+
+Kök düzen kullanıcı bilgisini sunucuda okumaz (kenar menüdeki ad istemcide `/api/auth/me` ile alınır). Okusaydı çerez okuması tüm siteyi dinamik yapar, `/giris` (SSG) ve `/siralama` (ISR) gibi sayfaların statik üretimi bozulurdu.
+
+---
+
 ## 5. Neden Next.js?
 
 | Ders gereksinimi | Next.js'teki karşılığı |

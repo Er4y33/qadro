@@ -39,7 +39,8 @@ export function MatchActions({
     });
 
   return (
-    <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-bg/95 px-5 pt-3 pb-6 backdrop-blur">
+    // Telefonda ekranın altına sabit; masaüstünde sağ kolonun sonunda normal akışta
+    <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-bg/95 px-5 pt-3 pb-6 backdrop-blur lg:static lg:mt-8 lg:max-w-none lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
       {error && <p className="mb-2 text-center text-xs font-semibold text-danger">{error}</p>}
 
       {joined ? (

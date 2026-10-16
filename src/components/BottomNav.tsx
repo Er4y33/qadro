@@ -18,7 +18,7 @@ export function BottomNav() {
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-surface/95 backdrop-blur">
+    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-surface/95 backdrop-blur lg:hidden">
       <div className="relative grid grid-cols-4 px-4 pt-3 pb-6">
         {items.map(({ href, label, icon: Icon }, i) => (
           <Link

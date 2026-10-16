@@ -385,7 +385,7 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
         )}
       </div>
 
-      <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-bg/95 px-5 pt-3 pb-6 backdrop-blur">
+      <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 lg:left-[calc(50%+8rem)] lg:max-w-[520px] border-t border-line bg-bg/95 px-5 pt-3 pb-6 backdrop-blur">
         {errors.length > 0 && (
           <ul className="mb-2 space-y-0.5 text-center text-xs font-semibold text-danger">
             {errors.map((e) => (

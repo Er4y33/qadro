@@ -66,7 +66,7 @@ export default async function ChatRoomPage({ params }: { params: Promise<{ id: s
         )}
       </main>
 
-      <form className="fixed bottom-0 left-1/2 flex w-full max-w-[430px] -translate-x-1/2 items-center gap-2 border-t border-line bg-bg/95 px-4 pt-3 pb-6 backdrop-blur">
+      <form className="fixed bottom-0 left-1/2 flex w-full max-w-[430px] -translate-x-1/2 lg:left-[calc(50%+8rem)] lg:max-w-[520px] items-center gap-2 border-t border-line bg-bg/95 px-4 pt-3 pb-6 backdrop-blur">
         <button type="button" aria-label="Ek ekle" className="flex h-10 w-10 items-center justify-center text-muted">
           <Plus size={22} />
         </button>

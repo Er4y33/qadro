@@ -13,7 +13,7 @@ export function MatchFeed({ matches }: { matches: Match[] }) {
 
   return (
     <>
-      <div className="mt-6 flex gap-2" role="tablist" aria-label="Branş">
+      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Branş">
         {(Object.keys(SPORT_LABELS) as Sport[]).map((s) => (
           <button
             key={s}
@@ -32,7 +32,7 @@ export function MatchFeed({ matches }: { matches: Match[] }) {
       </div>
 
       <h2 className="mt-6 mb-3 text-lg font-bold">Sana Uygun Maçlar</h2>
-      <div className="space-y-4">
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
         {visible.map((m) => (
           <MatchCard key={m.id} match={m} />
         ))}

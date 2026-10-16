@@ -11,7 +11,7 @@ const toneClass = {
 
 export default function ChatsPage() {
   return (
-    <div className="px-5 pt-6">
+    <div className="px-5 pt-6 lg:mx-auto lg:max-w-2xl lg:pt-10">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Sohbetler</h1>
         <button type="button" aria-label="Yeni sohbet" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface">

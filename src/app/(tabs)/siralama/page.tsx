@@ -9,5 +9,9 @@ import { currentUser } from "@/lib/mock-data";
 export const revalidate = 300;
 
 export default function LeaderboardPage() {
-  return <LeaderboardView playerId={currentUser.id} />;
+  return (
+    <div className="lg:mx-auto lg:max-w-2xl lg:pt-4">
+      <LeaderboardView playerId={currentUser.id} />
+    </div>
+  );
 }

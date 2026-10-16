@@ -15,7 +15,13 @@ export const dynamic = "force-dynamic";
 
 const TZ = "Europe/Istanbul";
 const dayFmt = new Intl.DateTimeFormat("tr-TR", { timeZone: "UTC", day: "numeric", month: "short" });
-const timeFmt = new Intl.DateTimeFormat("tr-TR", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const timeFmt = new Intl.DateTimeFormat("tr-TR", {
+  timeZone: TZ,
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 export default async function DashboardPage() {
   await requireViewer();
@@ -24,7 +30,7 @@ export default async function DashboardPage() {
   const totalEvents = data.byType.reduce((sum, t) => sum + t.count, 0);
 
   return (
-    <main className="flex-1 pb-12">
+    <main className="flex-1 pb-12 lg:mx-auto lg:w-full lg:max-w-6xl lg:px-6">
       <ScreenHeader title="Kullanıcı Davranışı" backHref="/profil" />
 
       <div className="space-y-7 px-5">
@@ -34,7 +40,7 @@ export default async function DashboardPage() {
         </p>
 
         {/* KPI satırı: tek bir sayı anlatıyorsa grafik değil, sayının kendisi */}
-        <section className="grid grid-cols-2 gap-3" aria-label="Özet">
+        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" aria-label="Özet">
           <Kpi icon={Users} value={data.kpis.registered} label="Kayıtlı kullanıcı" />
           <Kpi icon={Activity} value={data.kpis.active7d} label="Son 7 günde aktif" />
           <Kpi icon={CalendarCheck} value={data.kpis.openMatches} label="Yaklaşan maç" />
@@ -44,7 +50,7 @@ export default async function DashboardPage() {
         <section>
           <SectionTitle>Günlük Etkinlik (son 14 gün)</SectionTitle>
           <div className="rounded-2xl border border-line bg-surface p-4">
-            <div className="relative flex h-36 items-end gap-0.5" role="list" aria-label="Günlük olay sayısı">
+            <div className="relative flex h-36 items-end gap-0.5 lg:h-56 lg:gap-1" role="list" aria-label="Günlük olay sayısı">
               {/* Sade yatay kılavuz çizgileri */}
               <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-line" />
               <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-line" />
@@ -76,80 +82,97 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section>
-          <SectionTitle>Dönüşüm Hunisi</SectionTitle>
-          <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
-            {data.funnel.map((step) => (
-              <Bar
-                key={step.label}
-                label={step.label}
-                value={step.count}
-                max={data.funnel[0].count}
-                note={data.funnel[0].count ? `%${Math.round((step.count / data.funnel[0].count) * 100)}` : "–"}
-              />
-            ))}
-            <p className="pt-1 text-xs text-muted">Kayıt olanların ne kadarının gerçekten oyuna dahil olduğunu gösterir.</p>
-          </div>
-        </section>
-
-        <section>
-          <SectionTitle>Olay Türleri</SectionTitle>
-          <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
-            {data.byType.length === 0 && <p className="text-sm text-muted">Henüz olay yok.</p>}
-            {data.byType.map((t) => (
-              <Bar key={t.type} label={t.label} value={t.count} max={data.byType[0].count} note={`%${Math.round((t.count / totalEvents) * 100)}`} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <SectionTitle>Branşlar</SectionTitle>
-          <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
-            {data.bySport.map((s) => (
-              <Bar key={s.sport} label={s.label} value={s.matches} max={data.bySport[0].matches} note={`doluluk %${s.avgFill}`} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <SectionTitle>Son Hareketler</SectionTitle>
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
-            {data.recent.map((e) => (
-              <li key={e.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
-                <span className="min-w-0">
-                  <strong>{e.player}</strong> <span className="text-muted">· {e.label}</span>
-                  {e.match && <span className="block truncate text-xs text-muted">{e.match}</span>}
-                </span>
-                <time dateTime={e.at} className="shrink-0 text-xs text-muted">
-                  {timeFmt.format(new Date(e.at))}
-                </time>
-              </li>
-            ))}
-            {data.recent.length === 0 && <li className="px-4 py-3 text-sm text-muted">Henüz hareket yok.</li>}
-          </ul>
-        </section>
-
-        <details className="rounded-2xl border border-line bg-surface p-4 text-sm">
-          <summary className="cursor-pointer font-semibold">Günlük veriyi tablo olarak gör</summary>
-          <table className="mt-3 w-full text-left text-xs">
-            <thead className="text-muted">
-              <tr>
-                <th className="py-1 font-medium">Gün</th>
-                <th className="py-1 text-right font-medium">Olay</th>
-                <th className="py-1 text-right font-medium">Kullanıcı</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.daily.map((d) => (
-                <tr key={d.day} className="border-t border-line">
-                  <td className="py-1">{dayFmt.format(new Date(`${d.day}T00:00:00Z`))}</td>
-                  <td className="py-1 text-right tabular-nums">{d.events}</td>
-                  <td className="py-1 text-right tabular-nums">{d.users}</td>
-                </tr>
+        {/* Masaüstünde üç dağılım grafiği yan yana */}
+        <div className="space-y-7 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
+          <section>
+            <SectionTitle>Dönüşüm Hunisi</SectionTitle>
+            <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+              {data.funnel.map((step) => (
+                <Bar
+                  key={step.label}
+                  label={step.label}
+                  value={step.count}
+                  max={data.funnel[0].count}
+                  note={data.funnel[0].count ? `%${Math.round((step.count / data.funnel[0].count) * 100)}` : "–"}
+                />
               ))}
-            </tbody>
-          </table>
-        </details>
+              <p className="pt-1 text-xs text-muted">Kayıt olanların ne kadarının gerçekten oyuna dahil olduğunu gösterir.</p>
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle>Olay Türleri</SectionTitle>
+            <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+              {data.byType.length === 0 && <p className="text-sm text-muted">Henüz olay yok.</p>}
+              {data.byType.map((t) => (
+                <Bar
+                  key={t.type}
+                  label={t.label}
+                  value={t.count}
+                  max={data.byType[0].count}
+                  note={`%${Math.round((t.count / totalEvents) * 100)}`}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle>Branşlar</SectionTitle>
+            <div className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+              {data.bySport.map((s) => (
+                <Bar
+                  key={s.sport}
+                  label={s.label}
+                  value={s.matches}
+                  max={data.bySport[0].matches}
+                  note={`doluluk %${s.avgFill}`}
+                />
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+          <section>
+            <SectionTitle>Son Hareketler</SectionTitle>
+            <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+              {data.recent.map((e) => (
+                <li key={e.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+                  <span className="min-w-0">
+                    <strong>{e.player}</strong> <span className="text-muted">· {e.label}</span>
+                    {e.match && <span className="block truncate text-xs text-muted">{e.match}</span>}
+                  </span>
+                  <time dateTime={e.at} className="shrink-0 text-xs text-muted">
+                    {timeFmt.format(new Date(e.at))}
+                  </time>
+                </li>
+              ))}
+              {data.recent.length === 0 && <li className="px-4 py-3 text-sm text-muted">Henüz hareket yok.</li>}
+            </ul>
+          </section>
+
+          <details className="rounded-2xl border border-line bg-surface p-4 text-sm">
+            <summary className="cursor-pointer font-semibold">Günlük veriyi tablo olarak gör</summary>
+            <table className="mt-3 w-full text-left text-xs">
+              <thead className="text-muted">
+                <tr>
+                  <th className="py-1 font-medium">Gün</th>
+                  <th className="py-1 text-right font-medium">Olay</th>
+                  <th className="py-1 text-right font-medium">Kullanıcı</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.daily.map((d) => (
+                  <tr key={d.day} className="border-t border-line">
+                    <td className="py-1">{dayFmt.format(new Date(`${d.day}T00:00:00Z`))}</td>
+                    <td className="py-1 text-right tabular-nums">{d.events}</td>
+                    <td className="py-1 text-right tabular-nums">{d.users}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        </div>
       </div>
     </main>
   );

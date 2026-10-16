@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AppFrame } from "@/components/AppFrame";
 
 export const metadata: Metadata = {
   title: "Qadro | Eksik Oyuncu Derdine Son",
@@ -29,10 +30,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        {/* Uygulama mobil öncelikli; masaüstünde telefon genişliğinde ortalanır */}
-        <div className="qadro-stripes mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-bg shadow-2xl shadow-black/20">
-          {children}
-        </div>
+        {/* Mobil öncelikli, masaüstünde kenar menülü tam ekran (src/components/AppFrame.tsx) */}
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );
