@@ -59,8 +59,8 @@ Tarayıcı (istemci)                     Sunucu (Next.js / Vercel)
 |---|---|---|
 | **1xx** | Bilgilendirme | Doğrudan kullanılmıyor |
 | **2xx** | Başarılı | `200 OK`: sayfa açıldı · `201 Created`: yeni maç oluşturuldu · `204 No Content`: maçtan ayrıldın |
-| **3xx** | Yönlendirme (kaynak taşındı) | `301/308`: kalıcı yönlendirme · `307`: geçici yönlendirme |
-| **4xx** | **İstemci** hatası | `400`: eksik/hatalı form · `404`: olmayan bir maç · `409`: maç dolu ya da zaten kadrodasın · `401`: giriş yapılmamış *(planlanan)* |
+| **3xx** | Yönlendirme (kaynak taşındı) | `307`: giriş yapmamış ziyaretçi `/hosgeldin` ekranına yönlendirilir (`src/middleware.ts`) |
+| **4xx** | **İstemci** hatası | `400`: eksik/hatalı form · `404`: olmayan bir maç · `409`: maç dolu, zaten kadrodasın ya da e-posta kayıtlı · `401`: giriş yapılmamış ya da şifre hatalı |
 | **5xx** | Sunucu hatası | `500`: sunucuda beklenmeyen hata |
 
 **Not:** Ders notunda 4xx "işlemci hatası" olarak geçiyor. Doğrusu **istemci (client) hatası**: isteği gönderen tarafın hatası, örneğin yanlış adres ya da eksik yetki.
@@ -177,6 +177,10 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `GET /api/matches/[id]` | Tek maç | `200` · `404` |
 | `POST /api/matches/[id]/participants` | Maça katılır | `201` · `404` · `409` dolu / zaten kadroda |
 | `DELETE /api/matches/[id]/participants` | Maçtan ayrılır | `204` · `404` · `409` organizatör ayrılamaz |
+| `POST /api/auth/register` | Kayıt olur, oturum açar | `201` + `Set-Cookie` · `400` · `409` e-posta kayıtlı |
+| `POST /api/auth/login` | Giriş yapar | `200` + `Set-Cookie` · `401` e-posta ya da şifre hatalı |
+| `POST /api/auth/logout` | Çıkış yapar | `204` |
+| `GET /api/auth/me` | Giriş yapan oyuncu | `200` · `401` |
 | `GET /api/health` | Uygulama ve veritabanı durumu (`postgres` = Supabase, `pglite` = gömülü) | `200` · `503` veritabanına ulaşılamıyor |
 
 Denemek için (sunucu açıkken):
@@ -188,9 +192,36 @@ curl -i -X POST http://localhost:3000/api/matches/elbistan-basket/participants  
 
 Tarayıcıda F12 → **Network** sekmesinde de "Maça Katıl" dendiğinde giden `POST` isteği ve dönen `201` görülebilir.
 
-**Not:** Kimlik doğrulama henüz yok; tüm işlemler demo kullanıcı (`src/lib/session.ts`) adına yapılır.
+Maç uç noktaları giriş ister; çerez yoksa `401 Unauthorized` döner.
+
+### Kimlik doğrulama (kayıt ve giriş)
+
+Hazır bir servis yerine kendimiz yazdık; böylece derste işlenen HTTP kavramları kodda doğrudan görülür (`src/lib/auth.ts`).
+
+```
+Tarayıcı                                   Sunucu
+   │ POST /api/auth/login {email, şifre}     │
+   │ ──────────────────────────────────────► │ şifreyi scrypt özetiyle karşılaştırır
+   │ 200 OK                                  │
+   │ Set-Cookie: qadro_session=…; HttpOnly   │ rastgele oturum anahtarı üretir
+   │ ◄────────────────────────────────────── │ (veritabanında yalnızca SHA-256 özeti)
+   │                                         │
+   │ GET /profil                             │
+   │ Cookie: qadro_session=…                 │ çerezden oyuncuyu bulur
+   │ ──────────────────────────────────────► │
+```
+
+| Güvenlik önlemi | Neden |
+|---|---|
+| Şifreler **scrypt** + rastgele tuz ile özetlenir | Veritabanı sızsa bile şifreler okunamaz |
+| Çerez **HttpOnly**, **SameSite=Lax**, canlıda **Secure** | JavaScript çereze erişemez (XSS), başka siteden istekle kullanılamaz (CSRF), yalnızca HTTPS'te gider |
+| Veritabanında oturum anahtarının yalnızca **özeti** | Sızıntıda oturumlar çalınamaz |
+| Hatalı girişte "e-posta **ya da** şifre hatalı" | Hangi e-postaların kayıtlı olduğu tahmin edilemez |
+| Şifre karşılaştırması `timingSafeEqual` ile | Yanıt süresinden bilgi sızmaz |
+
+**Demo hesabı:** Giriş ekranındaki "Demo hesabıyla dene" düğmesi, Figma tasarımındaki örnek oyuncu (Atahan) olarak giriş yapar. Hoca ve ekip kayıt olmadan uygulamayı deneyebilir.
 
 ## 8. Sıradaki Adımlar
 
-- [ ] Supabase Auth: gerçek kullanıcı girişi (`401` durum kodu)
+- [ ] Şifremi unuttum (e-posta ile sıfırlama), Google ile giriş
 - [ ] **Dashboard**: `user_events` tablosundan kullanıcı davranışlarının grafikleri

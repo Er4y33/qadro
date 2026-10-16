@@ -55,7 +55,7 @@ export default function OnboardingPage() {
         </div>
         <button
           type="button"
-          onClick={() => (last ? router.push("/giris") : setI(i + 1))}
+          onClick={() => (last ? router.push("/kayit") : setI(i + 1))}
           aria-label={last ? "Başla" : "Sonraki"}
           className={cn("flex h-12 w-14 items-center justify-center rounded-full text-on-primary", last ? "bg-success" : "bg-primary")}
         >

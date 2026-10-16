@@ -6,7 +6,7 @@ import { MatchActions } from "@/components/MatchActions";
 import { QadroMap } from "@/components/map/QadroMap";
 import { getVenue } from "@/lib/mock-data";
 import { getMatch } from "@/lib/matches";
-import { CURRENT_PLAYER_ID } from "@/lib/session";
+import { requireViewer } from "@/lib/session";
 import { SPORT_LABELS } from "@/lib/types";
 
 /*
@@ -17,12 +17,13 @@ export const dynamic = "force-dynamic";
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const viewer = await requireViewer();
   const match = await getMatch(id);
   if (!match) notFound();
   const venue = getVenue(match.venueId);
 
-  const joined = match.participants.some((p) => p.id === CURRENT_PLAYER_ID);
-  const isOrganizer = match.organizer.id === CURRENT_PLAYER_ID;
+  const joined = match.participants.some((p) => p.id === viewer.id);
+  const isOrganizer = match.organizer.id === viewer.id;
   const openSlots = match.capacity - match.joined;
 
   return (
@@ -89,14 +90,14 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           <div className="flex flex-wrap items-center gap-y-2">
             {/* Kullanıcı kadrodaysa en başta görünsün */}
             {[...match.participants]
-              .sort((a, b) => Number(b.id === CURRENT_PLAYER_ID) - Number(a.id === CURRENT_PLAYER_ID))
+              .sort((a, b) => Number(b.id === viewer.id) - Number(a.id === viewer.id))
               .slice(0, 5)
               .map((p, i) => (
               <Avatar
                 key={p.id}
                 player={p}
                 size={40}
-                className={cn("border-2 border-bg", i > 0 && "-ml-2", p.id === CURRENT_PLAYER_ID && "ring-2 ring-primary")}
+                className={cn("border-2 border-bg", i > 0 && "-ml-2", p.id === viewer.id && "ring-2 ring-primary")}
               />
             ))}
             {match.participants.length > 5 && (

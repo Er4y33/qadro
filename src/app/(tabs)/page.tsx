@@ -2,23 +2,23 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { MatchFeed } from "@/components/MatchFeed";
-import { currentUser } from "@/lib/mock-data";
 import { listMatches } from "@/lib/matches";
-import { CURRENT_PLAYER_ID } from "@/lib/session";
+import { requireViewer } from "@/lib/session";
 
 // Maçlar veritabanından her istekte okunur (SSR); filtreleme tarayıcıda (CSR).
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const matches = await listMatches(CURRENT_PLAYER_ID);
+  const viewer = await requireViewer();
+  const matches = await listMatches(viewer.id);
   return (
     <div className="px-5 pt-6">
       <header className="flex items-center justify-between">
         <Link href="/profil" className="flex items-center gap-3">
-          <Avatar player={currentUser} size={42} />
+          <Avatar player={viewer} size={42} />
           <div className="leading-tight">
             <p className="text-xs text-muted">Selam,</p>
-            <p className="text-lg font-bold">{currentUser.name}!</p>
+            <p className="text-lg font-bold">{viewer.name.split(" ")[0]}!</p>
           </div>
         </Link>
         <Link

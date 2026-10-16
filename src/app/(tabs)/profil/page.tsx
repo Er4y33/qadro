@@ -3,15 +3,18 @@ import { ChevronRight, Star, Trophy } from "lucide-react";
 import { Avatar, SectionTitle } from "@/components/ui";
 import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { currentUser } from "@/lib/mock-data";
+import { LogoutButton } from "@/components/LogoutButton";
+import { requireViewer } from "@/lib/session";
+import { getProfile } from "@/lib/players";
 import { levelFromXp } from "@/lib/gamification";
 import { evaluateBadges } from "@/lib/badges";
 import { BadgeGrid } from "@/components/BadgeGrid";
 
-export default function ProfilePage() {
-  const { level, current, needed } = levelFromXp(currentUser.totalXp);
-  const lastMatch = currentUser.recentMatch;
-  const badges = evaluateBadges(currentUser.stats);
+export default async function ProfilePage() {
+  const profile = await getProfile(await requireViewer());
+  const { level, current, needed } = levelFromXp(profile.totalXp);
+  const lastMatch = profile.recentMatch;
+  const badges = evaluateBadges(profile.stats);
 
   return (
     <div className="relative overflow-hidden px-5 pt-6">
@@ -26,11 +29,11 @@ export default function ProfilePage() {
 
       <section className="relative mt-5 flex flex-col items-center text-center">
         <span className="rounded-full border-2 border-primary p-1">
-          <Avatar player={currentUser} size={76} badge={level} className="border-4 border-bg" />
+          <Avatar player={profile} size={76} badge={level} className="border-4 border-bg" />
         </span>
-        <h2 className="mt-3 text-2xl font-bold">{currentUser.name}</h2>
+        <h2 className="mt-3 text-2xl font-bold">{profile.name}</h2>
         <p className="text-sm font-semibold text-success">
-          {currentUser.role} • {currentUser.city}
+          {profile.role} • {profile.city}
         </p>
         <p className="mt-1 text-xs text-muted">
           Seviye {level} • {current.toLocaleString("tr-TR")} / {needed.toLocaleString("tr-TR")} XP
@@ -38,16 +41,16 @@ export default function ProfilePage() {
       </section>
 
       <section className="relative mt-5 grid grid-cols-3 gap-3 text-center">
-        <Stat value={currentUser.matchesPlayed} label="Oynanan Maç" />
+        <Stat value={profile.stats.matchesPlayed} label="Oynanan Maç" />
         <Stat
           value={
             <span className="inline-flex items-center gap-1 text-warning">
-              {currentUser.rating} <Star size={13} fill="currentColor" />
+              {profile.reliability.toFixed(1)} <Star size={13} fill="currentColor" />
             </span>
           }
           label="Güvenilirlik"
         />
-        <Stat value={currentUser.mvpAwards} label="MVP Ödülü" />
+        <Stat value={profile.mvpAwards} label="MVP Ödülü" />
       </section>
 
       <Link
@@ -68,7 +71,13 @@ export default function ProfilePage() {
       <section className="mt-6">
         <SectionTitle>Oyuncu Özellikleri</SectionTitle>
         <div className="rounded-2xl border border-line bg-surface p-2">
-          <RadarChart data={currentUser.attributes} />
+          {profile.attributes ? (
+            <RadarChart data={profile.attributes} />
+          ) : (
+            <p className="px-4 py-8 text-center text-sm text-muted">
+              Maçlardan sonra takım arkadaşların seni değerlendirdikçe özellik grafiğin burada oluşacak.
+            </p>
+          )}
         </div>
       </section>
 
@@ -82,20 +91,32 @@ export default function ProfilePage() {
         >
           Son Maçlar
         </SectionTitle>
-        <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/15 font-bold text-success">W</span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{lastMatch.title}</p>
-            <p className="text-xs text-muted">Dün • {lastMatch.format} • Merkez Saha</p>
+        {lastMatch ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/15 font-bold text-success">W</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{lastMatch.title}</p>
+              <p className="text-xs text-muted">
+                {lastMatch.format} • {lastMatch.venueShort}
+              </p>
+            </div>
+            <Link
+              href={`/mac/${lastMatch.id}/degerlendir`}
+              className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
+            >
+              Değerlendir
+            </Link>
           </div>
-          <Link
-            href={`/mac/${lastMatch.id}/degerlendir`}
-            className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
-          >
-            Değerlendir
+        ) : (
+          <Link href="/" className="block rounded-2xl border border-dashed border-line p-4 text-center text-sm text-muted">
+            Henüz oynanmış maçın yok. <span className="font-semibold text-primary">İlk maçını bul →</span>
           </Link>
-        </div>
+        )}
       </section>
+
+      <div className="mt-8 mb-4">
+        <LogoutButton />
+      </div>
     </div>
   );
 }

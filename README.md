@@ -37,14 +37,14 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 | Yol | Ekran | Render stratejisi |
 |---|---|---|
 | `/hosgeldin` | Tanıtım (3 adım) | Statik (SSG) |
-| `/giris` | Giriş | Statik (SSG) |
+| `/giris`, `/kayit` | Giriş ve kayıt ("Sahaya Adım At!") | Statik (SSG) + form istemcide |
 | `/` | Ana sayfa, spor filtresi, maç listesi (veritabanından) | **SSR** + istemcide filtre (CSR) |
 | `/mac/[id]` | Maç detayı, katıl / ayrıl | **SSR**: kontenjan her istekte veritabanından |
 | `/mac/[id]/dizilim` | Saha dizilimi, bölge seçerek katılma | SSR + CSR |
 | `/mac/olustur` | 3 adımlı maç oluşturma (branş/format → zaman/saha → kurallar/onay) | Sunucu bileşeni + CSR form |
 | `/sohbetler` | Takım sohbetleri | Statik (SSG) |
 | `/sohbetler/[id]` | Sohbet odası | SSR |
-| `/profil` | Oyuncu kartı, radar grafiği, tema değiştirme | Statik (SSG) |
+| `/profil` | Oyuncu kartı (gerçek istatistikler), başarımlar, çıkış | SSR |
 | `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSR + harita istemcide (CSR) |
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
 | `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
@@ -101,7 +101,7 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [x] Figma ekranlarının koda aktarılması
 - [x] PostgreSQL veritabanı (PGlite / Supabase) ve REST API: maç oluşturma, katılma, ayrılma
 - [x] Olay günlüğü (`user_events`)
-- [ ] Supabase Auth ile kimlik doğrulama
+- [x] Kayıt / giriş / çıkış (şifre özetleme, HttpOnly oturum çerezi, 401)
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
 - [ ] Kullanıcı ve yönetici dashboard'u

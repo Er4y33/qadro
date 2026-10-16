@@ -3,12 +3,13 @@ import { MapPin } from "lucide-react";
 import { QadroMap, type MapPin as Pin } from "@/components/map/QadroMap";
 import { getVenue } from "@/lib/mock-data";
 import { listMatches } from "@/lib/matches";
-import { CURRENT_PLAYER_ID } from "@/lib/session";
+import { requireViewer } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
-  const matches = await listMatches(CURRENT_PLAYER_ID);
+  const viewer = await requireViewer();
+  const matches = await listMatches(viewer.id);
   const items = matches.flatMap((match) => {
     const venue = getVenue(match.venueId);
     return venue ? [{ match, venue }] : [];

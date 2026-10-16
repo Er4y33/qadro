@@ -56,6 +56,19 @@ CREATE TABLE IF NOT EXISTS user_events (
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- Giriş sistemi: örnek oyuncuların e-postası yoktur, yalnızca kayıt olanların vardır.
+ALTER TABLE players ADD COLUMN IF NOT EXISTS email text UNIQUE;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS password_hash text;
+
+-- Oturumlar: tarayıcıdaki çerezde rastgele bir anahtar durur, burada yalnızca onun SHA-256 özeti saklanır.
+-- Veritabanı sızsa bile özetlerden oturum çalınamaz.
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash  text PRIMARY KEY,
+  player_id   text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  expires_at  timestamptz NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS matches_starts_at_idx ON matches (starts_at);
 CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at);
 
@@ -66,4 +79,5 @@ ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 `;
