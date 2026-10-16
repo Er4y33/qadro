@@ -279,7 +279,7 @@ export async function leaveMatch(matchId: string, playerId: string): Promise<Lea
 /** Kullanıcı davranışını kaydeder (dashboard için) */
 export async function logEvent(playerId: string | null, type: string, matchId?: string, payload: Record<string, unknown> = {}) {
   const db = await getDb();
-  await db.query("INSERT INTO user_events (player_id, type, match_id, payload) VALUES ($1, $2, $3, $4)", [
+  await db.query("INSERT INTO user_events (player_id, type, match_id, payload) VALUES ($1, $2, $3, $4::text::jsonb)", [
     playerId,
     type,
     matchId ?? null,

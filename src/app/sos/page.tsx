@@ -8,5 +8,5 @@ export default async function SosPage({ searchParams }: { searchParams: Promise<
   const match = mac ? await getMatch(mac) : (await listMatches(CURRENT_PLAYER_ID))[0];
   if (!match) notFound();
 
-  return <SosCall matchId={match.id} matchTitle={match.title} />;
+  return <SosCall matchId={match.id} matchTitle={match.title} sport={match.sport} />;
 }

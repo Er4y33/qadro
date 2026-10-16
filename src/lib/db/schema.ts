@@ -59,6 +59,9 @@ CREATE TABLE IF NOT EXISTS user_events (
 CREATE INDEX IF NOT EXISTS matches_starts_at_idx ON matches (starts_at);
 CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at);
 
+-- Düzeltme: ilk sürümde payload metin olarak kaydedilmişti ("{...}"), gerçek JSON nesnesine çevir.
+UPDATE user_events SET payload = (payload #>> '{}')::jsonb WHERE jsonb_typeof(payload) = 'string';
+
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_participants ENABLE ROW LEVEL SECURITY;

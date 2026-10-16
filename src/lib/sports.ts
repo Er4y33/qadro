@@ -22,6 +22,14 @@ export const FORMATS: Record<Sport, { label: string; players: number }[]> = {
   ],
 };
 
+/** S.O.S çağrısında seçilebilecek mevkiler (branşa göre) */
+export const POSITIONS: Record<Sport, string[]> = {
+  futbol: ["Kaleci", "Defans", "Orta Saha", "Forvet"],
+  basketbol: ["Oyun Kurucu", "Kanat", "Pivot"],
+  voleybol: ["Pasör", "Smaçör", "Libero"],
+  tenis: ["Rakip", "Çiftler Eşi"],
+};
+
 export const SPORT_EMOJI: Record<Sport, string> = { futbol: "⚽", basketbol: "🏀", voleybol: "🏐", tenis: "🎾" };
 
 export function isSport(value: unknown): value is Sport {

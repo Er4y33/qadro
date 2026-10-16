@@ -1,12 +1,13 @@
 "use client";
 
+import { POSITIONS } from "@/lib/sports";
+import type { Sport } from "@/lib/types";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { DISTRICT } from "@/lib/leaderboard";
 import { cn } from "./ui";
 
-const POSITIONS = ["Kaleci", "Defans", "Forvet"] as const;
 /** Bildirimin gideceği uygun oyuncu sayısı. API bağlanınca konum ve seviyeye göre hesaplanacak. */
 const NEARBY_PLAYERS = 24;
 
@@ -15,8 +16,9 @@ const NEARBY_PLAYERS = 24;
  * çevredeki uygun oyunculara öncelikli bildirim gönderir.
  * Oyunlaştırma: Çağrıya yanıt veren oyuncu "Kurtarıcı" başarımına ilerler (Philanthropist tipi).
  */
-export function SosCall({ matchId, matchTitle }: { matchId: string; matchTitle: string }) {
-  const [position, setPosition] = useState<(typeof POSITIONS)[number]>("Kaleci");
+export function SosCall({ matchId, matchTitle, sport }: { matchId: string; matchTitle: string; sport: Sport }) {
+  const positions = POSITIONS[sport];
+  const [position, setPosition] = useState(positions[0]);
   const [sent, setSent] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
@@ -64,13 +66,13 @@ export function SosCall({ matchId, matchTitle }: { matchId: string; matchTitle: 
       <h1 className="mt-8 text-center text-2xl font-bold">{sent ? "Sinyal Gönderildi!" : "Acil Adam Lazım!"}</h1>
       <p className="mt-2 text-center text-sm text-muted">
         {sent
-          ? `${DISTRICT} çevresindeki ${NEARBY_PLAYERS} oyuncuya ${position.toLowerCase()} çağrısı ulaştı. İlk kabul eden kadroya eklenir.`
+          ? `${DISTRICT} çevresindeki ${NEARBY_PLAYERS} oyuncuya ${position.toLocaleLowerCase("tr-TR")} çağrısı ulaştı. İlk kabul eden kadroya eklenir.`
           : `${DISTRICT} çevresindeki ${NEARBY_PLAYERS} uygun oyuncuya yüksek öncelikli radar bildirimi gidecek.`}
       </p>
 
       <h2 className="mt-8 mb-3 text-sm font-bold">İhtiyaç Duyulan Mevki</h2>
       <div className="flex gap-2" role="radiogroup" aria-label="İhtiyaç duyulan mevki">
-        {POSITIONS.map((p) => (
+        {positions.map((p) => (
           <button
             key={p}
             type="button"
