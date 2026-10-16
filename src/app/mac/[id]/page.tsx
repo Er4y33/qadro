@@ -72,7 +72,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             <div className="flex-1">
               <p className="font-semibold">{match.organizer.name}</p>
               <p className="text-xs text-muted">
-                Lvl. {match.organizer.level} Oyun Kurucu • {match.organizer.rating} Yıldız
+                Lvl. {match.organizer.level} • {match.organizer.rating.toFixed(1)} Yıldız
               </p>
             </div>
             <Link
