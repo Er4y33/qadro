@@ -5,7 +5,7 @@ import { seed } from "./seed";
 /**
  * Veritabanı bağlantısı.
  *
- * - DATABASE_URL (ya da Vercel–Supabase entegrasyonunun eklediği POSTGRES_URL) varsa: gerçek PostgreSQL (Supabase).
+ * - Bağlantı adresi tanımlıysa (aşağıya bakın): gerçek PostgreSQL (Supabase).
  * - Yoksa: PGlite. Bilgisayara kurulum gerektirmeyen, WebAssembly ile çalışan gömülü PostgreSQL.
  *   Veriler proje klasöründeki `.qadro-db/` içinde saklanır (Git'e gönderilmez).
  *
@@ -19,7 +19,15 @@ interface Db {
   kind: "postgres" | "pglite";
 }
 
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+/**
+ * Bağlantı adresi şu sırayla aranır:
+ * DATABASE_URL → POSTGRES_URL → önekli Vercel–Supabase değişkeni (ör. STORAGE_POSTGRES_URL).
+ * Vercel entegrasyonu değişkenlere bir önek ekleyebildiği için sonuncusu otomatik bulunur.
+ */
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  Object.entries(process.env).find(([key, value]) => key.endsWith("_POSTGRES_URL") && value)?.[1];
 
 async function createDb(): Promise<Db> {
   if (connectionString) {
