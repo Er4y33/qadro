@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, PartyPopper, X } from "lucide-react";
 import type { LineupSlot } from "@/lib/types";
@@ -30,16 +30,38 @@ export function TeamReview({
 }) {
   const [index, setIndex] = useState(0);
   const [reviews, setReviews] = useState<Review[]>(() => teammates.map(() => ({ attended: null, praiseId: null })));
-  const finished = index >= teammates.length;
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  if (finished) {
+  if (submitted) {
     return <Summary matchId={matchId} reviews={reviews} ratingsGivenBefore={ratingsGivenBefore} />;
   }
 
+  const isLast = index === teammates.length - 1;
+
+  /** Son oyuncudan sonra tüm oylar tek istekte API'ye gönderilir */
+  const submit = () =>
+    startTransition(async () => {
+      setError(null);
+      const res = await fetch(`/api/matches/${matchId}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviews: reviews.map((r, i) => ({ playerId: teammates[i].player.id, attended: r.attended, praiseId: r.praiseId })),
+        }),
+      });
+      // Not: router.refresh() burada çağrılmaz; sayfa sunucuda "zaten değerlendirdin" durumuna geçip özet ekranını silerdi.
+      if (res.status === 201) setSubmitted(true);
+      else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Değerlendirme gönderilemedi.");
+      }
+    });
+
   const slot = teammates[index];
   const review = reviews[index];
-  const update = (patch: Partial<Review>) =>
-    setReviews((all) => all.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  const update = (patch: Partial<Review>) => setReviews((all) => all.map((r, i) => (i === index ? { ...r, ...patch } : r)));
 
   return (
     <main className="flex flex-1 flex-col">
@@ -63,7 +85,7 @@ export function TeamReview({
             <Avatar player={slot.player} size={72} badge="⚽" badgeTone="success" />
           </span>
           <h2 className="mt-3 text-2xl font-bold">{slot.player.name}</h2>
-          <p className="text-sm text-muted">{POSITION_NAMES[slot.position] ?? slot.position}</p>
+          <p className="text-sm text-muted">{POSITION_NAMES[slot.position] ?? (slot.position || "Oyuncu")}</p>
         </div>
 
         <hr className="my-5 border-dashed border-line" />
@@ -123,14 +145,27 @@ export function TeamReview({
         <div className="mb-4">
           <ProgressBar value={index} max={teammates.length} tone="primary" />
         </div>
-        <button
-          type="button"
-          disabled={review.attended === null}
-          onClick={() => setIndex((i) => i + 1)}
-          className="w-full rounded-xl bg-primary py-3.5 font-bold tracking-wide text-on-primary uppercase shadow-lg shadow-primary/30 transition disabled:opacity-40 disabled:shadow-none"
-        >
-          {index === teammates.length - 1 ? "Değerlendirmeyi Bitir" : "Sonraki Oyuncu"}
-        </button>
+        {error && <p className="mb-2 text-center text-xs font-semibold text-danger">{error}</p>}
+        <div className="flex gap-3">
+          {index > 0 && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setIndex((i) => i - 1)}
+              className="rounded-xl border border-line px-4 font-semibold text-muted"
+            >
+              Geri
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={review.attended === null || pending}
+            onClick={() => (isLast ? submit() : setIndex((i) => i + 1))}
+            className="flex-1 rounded-xl bg-primary py-3.5 font-bold tracking-wide text-on-primary uppercase shadow-lg shadow-primary/30 transition disabled:opacity-40 disabled:shadow-none"
+          >
+            {isLast ? (pending ? "Gönderiliyor..." : "Değerlendirmeyi Bitir") : "Sonraki Oyuncu"}
+          </button>
+        </div>
         {review.attended === null && (
           <p className="mt-2 text-center text-xs text-muted">Devam etmek için &quot;Geldi&quot; ya da &quot;Gelmedi&quot; seç</p>
         )}
@@ -139,19 +174,12 @@ export function TeamReview({
   );
 }
 
-function Summary({
-  matchId,
-  reviews,
-  ratingsGivenBefore,
-}: {
-  matchId: string;
-  reviews: Review[];
-  ratingsGivenBefore: number;
-}) {
+function Summary({ matchId, reviews, ratingsGivenBefore }: { matchId: string; reviews: Review[]; ratingsGivenBefore: number }) {
   const xp = reviews.length * XP_REWARDS.ratedOthers;
   const praiseCount = reviews.filter((r) => r.praiseId).length;
   const fairPlay = BADGES.find((b) => b.id === "adil-oyuncu")!;
-  const total = Math.min(ratingsGivenBefore + reviews.length, fairPlay.target);
+  // Başarım maç sayısıyla ilerler: bu gönderimle bir maç daha değerlendirilmiş oldu
+  const total = Math.min(ratingsGivenBefore + 1, fairPlay.target);
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
@@ -160,8 +188,8 @@ function Summary({
       </span>
       <h1 className="mt-5 text-2xl font-bold">Değerlendirme Tamamlandı</h1>
       <p className="mt-2 text-sm text-muted">
-        {reviews.length} oyuncuyu değerlendirdin, {praiseCount} övgü verdin. Oylar, en az 3 kişi oy verdiğinde ve çoğunluk
-        sağlandığında güvenilirlik puanına yansır.
+        {reviews.length} oyuncuyu değerlendirdin, {praiseCount} övgü verdin. &quot;Gelmedi&quot; oyları, en az 3 kişi oy
+        verdiğinde ve çoğunluk sağlandığında güvenilirlik puanına yansır; tek bir oy kimseyi cezalandırmaz.
       </p>
 
       <div className="mt-6 w-full rounded-2xl border border-line bg-surface p-4 text-left">

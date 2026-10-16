@@ -69,6 +69,21 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires_at  timestamptz NOT NULL
 );
 
+-- Maç sonu değerlendirmeleri ("Takımı Değerlendir"): her oyuncu, takım arkadaşı başına bir kayıt bırakır.
+-- attended: "Geldi / Gelmedi" oyu. praise_id: verilen övgü (src/lib/praise.ts), isteğe bağlı.
+CREATE TABLE IF NOT EXISTS match_reviews (
+  match_id     text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  reviewer_id  text NOT NULL REFERENCES players(id),
+  target_id    text NOT NULL REFERENCES players(id),
+  attended     boolean NOT NULL,
+  praise_id    text,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (match_id, reviewer_id, target_id),
+  CHECK (reviewer_id <> target_id),
+  CHECK (attended OR praise_id IS NULL)
+);
+CREATE INDEX IF NOT EXISTS match_reviews_target_idx ON match_reviews (target_id);
+
 CREATE INDEX IF NOT EXISTS matches_starts_at_idx ON matches (starts_at);
 CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at);
 
@@ -80,4 +95,5 @@ ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE match_reviews ENABLE ROW LEVEL SECURITY;
 `;

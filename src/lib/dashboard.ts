@@ -15,6 +15,7 @@ export const EVENT_LABELS: Record<string, string> = {
   match_created: "Maç oluşturma",
   match_joined: "Maça katılma",
   match_left: "Maçtan ayrılma",
+  match_reviewed: "Maç değerlendirme",
 };
 
 export interface DashboardData {

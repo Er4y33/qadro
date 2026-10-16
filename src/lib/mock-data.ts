@@ -22,8 +22,6 @@ export const currentUser = {
   matchesPlayed: 42,
   mvpAwards: 12,
   totalXp: 19700,
-  /** Profildeki "Son Maçlar" örneği (değerlendirme akışını açar) */
-  recentMatch: { id: "cuma-aksami-hali-saha", title: "Cuma Akşamı Halı Saha", format: "7v7" },
   /** Rozet koşulları için istatistikler */
   stats: {
     matchesPlayed: 42,

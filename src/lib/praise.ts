@@ -26,4 +26,8 @@ export const POSITION_NAMES: Record<string, string> = {
   SağO: "Orta Saha (Sağ)",
   Stp: "Defans",
   Klc: "Kaleci",
+  OS: "Orta Saha",
+  SolB: "Sol Bek",
+  SağB: "Sağ Bek",
+  Lib: "Libero",
 };

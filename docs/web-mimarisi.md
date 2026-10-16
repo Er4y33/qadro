@@ -60,7 +60,7 @@ Tarayıcı (istemci)                     Sunucu (Next.js / Vercel)
 | **1xx** | Bilgilendirme | Doğrudan kullanılmıyor |
 | **2xx** | Başarılı | `200 OK`: sayfa açıldı · `201 Created`: yeni maç oluşturuldu · `204 No Content`: maçtan ayrıldın |
 | **3xx** | Yönlendirme (kaynak taşındı) | `307`: giriş yapmamış ziyaretçi `/hosgeldin` ekranına yönlendirilir (`src/middleware.ts`) |
-| **4xx** | **İstemci** hatası | `400`: eksik/hatalı form · `404`: olmayan bir maç · `409`: maç dolu, zaten kadrodasın ya da e-posta kayıtlı · `401`: giriş yapılmamış ya da şifre hatalı |
+| **4xx** | **İstemci** hatası | `400`: eksik/hatalı form · `404`: olmayan bir maç · `409`: maç dolu, zaten kadrodasın ya da e-posta kayıtlı · `401`: giriş yapılmamış ya da şifre hatalı · `403`: giriş var ama yetki yok (oynamadığın maçı değerlendirmek) |
 | **5xx** | Sunucu hatası | `500`: sunucuda beklenmeyen hata |
 
 **Not:** Ders notunda 4xx "işlemci hatası" olarak geçiyor. Doğrusu **istemci (client) hatası**: isteği gönderen tarafın hatası, örneğin yanlış adres ya da eksik yetki.
@@ -164,6 +164,7 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `players` | Oyuncular |
 | `matches` | Maçlar (branş, format, tarih, kontenjan, ücret, gizlilik) |
 | `match_participants` | Kim hangi maçta, sahada hangi bölgede |
+| `match_reviews` | Maç sonu oyları: kim, kimi, geldi mi, hangi övgüyü verdi |
 | `user_events` | Kullanıcı davranışları: `match_created`, `match_joined`, `match_left` → **dashboard** bunu kullanacak |
 
 **Eşzamanlılık:** Son boş yere iki kişi aynı anda tıklarsa ikisi de girmesin diye kontenjan kontrolü ve ekleme **tek SQL cümlesinde** yapılır (`src/lib/matches.ts → joinMatch`). Kaybeden taraf `409 Conflict` alır.
@@ -181,6 +182,7 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `POST /api/auth/login` | Giriş yapar | `200` + `Set-Cookie` · `401` e-posta ya da şifre hatalı |
 | `POST /api/auth/logout` | Çıkış yapar | `204` |
 | `GET /api/auth/me` | Giriş yapan oyuncu | `200` · `401` |
+| `POST /api/matches/[id]/reviews` | Maç sonu "Takımı Değerlendir" | `201` · `400` · `401` · `403` bu maçta oynamadın · `404` · `409` maç oynanmadı / zaten değerlendirdin |
 | `GET /api/health` | Uygulama ve veritabanı durumu (`postgres` = Supabase, `pglite` = gömülü) | `200` · `503` veritabanına ulaşılamıyor |
 
 Denemek için (sunucu açıkken):

@@ -101,9 +101,9 @@ Hunicke, LeBlanc ve Zubek'in **MDA** (Mekanik – Dinamik – Estetik) çerçeve
 | Aşama | Mekanik | Hedef davranış | Dayandığı kuram | Durum |
 |---|---|---|---|---|
 | **1** | XP ve seviye | Maça gelmek | ÖBK: **yetkinlik** | ✅ Kodda (`src/lib/gamification.ts`) |
-| **2** | Güvenilirlik (Qadro Puanı) | Gelmek, zamanında gelmek | ÖBK: **ilişkisellik**, güven | ✅ Kodda |
+| **2** | Güvenilirlik (Qadro Puanı) | Gelmek, zamanında gelmek | ÖBK: **ilişkisellik**, güven | ✅ Veritabanındaki oylardan hesaplanıyor (`src/lib/reviews.ts → getReputation`) |
 | **3** | Rozetler (8 adet) | Davranış çeşitliliği | Hexad, hedef belirleme | ✅ Kodda (`src/lib/badges.ts`, profil ekranı) |
-| **4** | Takımı Değerlendir: Geldi/Gelmedi + övgüler | Gelmek, değerlendirmek | ÖBK: ilişkisellik; Malone ve Lepper: **tanınma** | ✅ Arayüz (`src/components/TeamReview.tsx`), çoğunluk oyu kuralı (`resolveAttendance`) |
+| **4** | Takımı Değerlendir: Geldi/Gelmedi + övgüler | Gelmek, değerlendirmek | ÖBK: ilişkisellik; Malone ve Lepper: **tanınma** | ✅ Çalışıyor: oylar `match_reviews` tablosuna kaydediliyor, övgüler profilde sayılarıyla görünüyor, "Adil Oyuncu" başarımı ilerliyor |
 | **5** | S.O.S (Joker) sistemi | Son dakika eksiğini kapatmak | Malone ve Lepper: **iş birliği** | ✅ Arayüz (`/sos`), bildirim gönderimi ⏳ |
 | **6** | Şehrin En İyileri (ilçe bazlı sıralama) | Topluluk içi rekabet | Akış (Flow), ulaşılabilir zorluk | ✅ Arayüz (`/siralama`, ISR) |
 | **6b** | Haftalık oynama serisi ve sezonlar | Düzenli katılım | Hook modeli (alışkanlık) | ⏳ Planlandı |

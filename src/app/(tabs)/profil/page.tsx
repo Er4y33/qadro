@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, ChevronRight, Star, Trophy } from "lucide-react";
+import { BarChart3, CalendarCheck, ChevronRight, CircleCheck, Star, Trophy } from "lucide-react";
 import { Avatar, SectionTitle } from "@/components/ui";
 import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -73,6 +73,24 @@ export default async function ProfilePage() {
       </Link>
 
       <section className="mt-6">
+        <SectionTitle>Övgüler</SectionTitle>
+        <div className="grid grid-cols-4 gap-2">
+          {profile.praises.map((p) => (
+            <div
+              key={p.id}
+              className={`rounded-2xl border border-line bg-surface py-3 text-center ${p.count === 0 ? "opacity-40" : ""}`}
+              title={`${p.label}: ${p.count} kez`}
+            >
+              <p className="text-xl">{p.emoji}</p>
+              <p className="mt-1 text-lg font-bold tabular-nums">{p.count}</p>
+              <p className="text-[10px] text-muted">{p.label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">Maç sonunda takım arkadaşların veriyor. XP kazandırmaz, itibarını gösterir.</p>
+      </section>
+
+      <section className="mt-6">
         <SectionTitle>Başarımlar</SectionTitle>
         <BadgeGrid badges={badges} />
       </section>
@@ -102,19 +120,27 @@ export default async function ProfilePage() {
         </SectionTitle>
         {lastMatch ? (
           <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/15 font-bold text-success">W</span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/15 text-success">
+              <CalendarCheck size={20} />
+            </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{lastMatch.title}</p>
               <p className="text-xs text-muted">
                 {lastMatch.format} • {lastMatch.venueShort}
               </p>
             </div>
-            <Link
-              href={`/mac/${lastMatch.id}/degerlendir`}
-              className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary"
-            >
-              Değerlendir
-            </Link>
+            {lastMatch.reviewed ? (
+              <span className="flex items-center gap-1 text-xs font-semibold text-muted">
+                <CircleCheck size={14} /> Değerlendirildi
+              </span>
+            ) : (
+              <Link
+                href={`/mac/${lastMatch.id}/degerlendir`}
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary"
+              >
+                Değerlendir
+              </Link>
+            )}
           </div>
         ) : (
           <Link href="/" className="block rounded-2xl border border-dashed border-line p-4 text-center text-sm text-muted">

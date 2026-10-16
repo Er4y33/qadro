@@ -121,8 +121,11 @@ const MATCHES: SeedMatch[] = [
 
 export async function seed(db: Db) {
   const [{ count }] = await db.query<{ count: number }>("SELECT count(*)::int AS count FROM players");
-  if (count > 0) return;
+  if (count === 0) await seedInitial(db);
+  await seedPastMatch(db);
+}
 
+async function seedInitial(db: Db) {
   for (const p of PLAYERS) {
     await db.query(
       `INSERT INTO players (id, name, initials, color, level, rating, overall)
@@ -144,5 +147,56 @@ export async function seed(db: Db) {
         [m.id, player, position ?? null, x ?? null, y ?? null, (m.participants.length - i) * 30],
       );
     }
+  }
+}
+
+/**
+ * Oynanmış bir örnek maç ve değerlendirmeleri (ikinci sürümde eklendi).
+ * Var olan veritabanlarına da eklensin diye her açılışta denenir; maç zaten varsa hiçbir şey yapmaz.
+ * Böylece demo hesabı "Takımı Değerlendir" akışını gerçek bir geçmiş maçla deneyebilir.
+ */
+async function seedPastMatch(db: Db) {
+  const id = "gecen-hafta-hali-saha";
+  const inserted = await db.query(
+    `INSERT INTO matches (id, venue_id, title, sport, format, starts_at, price, capacity, min_level, organizer_id, note)
+     VALUES ($1, 'elbistan-sentetik', 'Geçen Haftanın Maçı', 'futbol', '7v7', $2, 120, 14, 5, 'ahmet', 'Maç oynandı. Takım arkadaşlarını değerlendirmeyi unutma!')
+     ON CONFLICT (id) DO NOTHING RETURNING id`,
+    [id, inDays(-2, "21:00")],
+  );
+  if (inserted.length === 0) return;
+
+  const lineup: [string, string?, number?, number?][] = [
+    ["atahan", "Snt", 50, 15],
+    ["ahmet", "SolO", 22, 33],
+    ["can", "SağO", 78, 33],
+    ["emre", "OS", 50, 50],
+    ["burak", "Stp", 28, 67],
+    ["mert", "Stp", 72, 67],
+    ["oguz", "Klc", 50, 88],
+    ["yusuf"], ["kerem"], ["baris"], ["serkan"], ["onur"], ["hakan"], ["furkan"],
+  ];
+  for (const [player, position, x, y] of lineup) {
+    await db.query(
+      `INSERT INTO match_participants (match_id, player_id, position, x, y, joined_at)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
+      [id, player, position ?? null, x ?? null, y ?? null, inDays(-5, "12:00")],
+    );
+  }
+
+  // Başkalarının bıraktığı örnek oylar: Atahan'a övgüler; Onur'a 3 "Gelmedi" oyu (çoğunluk kuralını göstermek için)
+  const reviews: [string, string, boolean, string | null][] = [
+    ["ahmet", "atahan", true, "taktiksel"],
+    ["can", "atahan", true, "dinamik"],
+    ["burak", "atahan", true, "taktiksel"],
+    ["ahmet", "onur", false, null],
+    ["can", "onur", false, null],
+    ["oguz", "onur", false, null],
+    ["ahmet", "oguz", true, "kaya-gibi"],
+  ];
+  for (const [reviewer, target, attended, praise] of reviews) {
+    await db.query(
+      `INSERT INTO match_reviews (match_id, reviewer_id, target_id, attended, praise_id) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+      [id, reviewer, target, attended, praise],
+    );
   }
 }

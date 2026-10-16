@@ -56,7 +56,11 @@ export function reliabilityScore(joined: number, attended: number): number {
 export const MIN_ATTENDANCE_VOTES = 3;
 
 export function resolveAttendance(votes: boolean[]): boolean | null {
-  if (votes.length < MIN_ATTENDANCE_VOTES) return null;
-  const absentVotes = votes.filter((attended) => !attended).length;
-  return absentVotes <= votes.length / 2;
+  return resolveAttendanceCounts(votes.length, votes.filter((attended) => !attended).length);
+}
+
+/** Aynı kural, oy sayılarıyla (veritabanından gelen toplam ve "Gelmedi" sayısı) */
+export function resolveAttendanceCounts(totalVotes: number, absentVotes: number): boolean | null {
+  if (totalVotes < MIN_ATTENDANCE_VOTES) return null;
+  return absentVotes <= totalVotes / 2;
 }

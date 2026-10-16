@@ -48,7 +48,7 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 | `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSR + harita istemcide (CSR) |
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
 | `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
-| `/mac/[id]/degerlendir` | Takımı Değerlendir | SSR + CSR |
+| `/mac/[id]/degerlendir` | Takımı Değerlendir (oylar veritabanına, güvenilirlik ve övgüler profile yansır) | SSR + CSR |
 | `/sos` | S.O.S çağrısı | SSR + CSR |
 | `/bildirimler` | Bildirimler | Statik (SSG) |
 | `/panel` | Kullanıcı davranışı dashboard'u (`user_events`) | **SSR** |
@@ -102,6 +102,7 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [x] Figma ekranlarının koda aktarılması
 - [x] PostgreSQL veritabanı (PGlite / Supabase) ve REST API: maç oluşturma, katılma, ayrılma
 - [x] Olay günlüğü (`user_events`)
+- [x] Maç sonu değerlendirmesi: çoğunluk oyuyla güvenilirlik, övgüler, XP
 - [x] Kayıt / giriş / çıkış (şifre özetleme, HttpOnly oturum çerezi, 401)
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
