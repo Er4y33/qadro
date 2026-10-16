@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Star, Trophy } from "lucide-react";
+import { BarChart3, ChevronRight, Star, Trophy } from "lucide-react";
 import { Avatar, SectionTitle } from "@/components/ui";
 import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -60,6 +60,15 @@ export default async function ProfilePage() {
         <Trophy size={20} className="text-primary" />
         <span className="flex-1 text-sm font-semibold">Şehrin En İyileri</span>
         <span className="text-xs text-muted">Sıralamanı gör</span>
+        <ChevronRight size={16} className="text-muted" />
+      </Link>
+
+      <Link
+        href="/panel"
+        className="relative mt-3 flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3"
+      >
+        <BarChart3 size={20} className="text-primary" />
+        <span className="flex-1 text-sm font-semibold">Kullanıcı Davranışı Paneli</span>
         <ChevronRight size={16} className="text-muted" />
       </Link>
 

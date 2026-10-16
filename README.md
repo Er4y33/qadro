@@ -51,6 +51,7 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 | `/mac/[id]/degerlendir` | Takımı Değerlendir | SSR + CSR |
 | `/sos` | S.O.S çağrısı | SSR + CSR |
 | `/bildirimler` | Bildirimler | Statik (SSG) |
+| `/panel` | Kullanıcı davranışı dashboard'u (`user_events`) | **SSR** |
 
 ## Klasör yapısı
 
@@ -104,7 +105,7 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [x] Kayıt / giriş / çıkış (şifre özetleme, HttpOnly oturum çerezi, 401)
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
-- [ ] Kullanıcı ve yönetici dashboard'u
+- [x] Kullanıcı davranışı dashboard'u (`/panel`)
 - [x] 3 adımlı Maç Oluştur, Tenis branşı
 - [x] PWA bildirimi ve ikonlar (ana ekrana ekleme)
 - [ ] Çevrimdışı çalışma (service worker)

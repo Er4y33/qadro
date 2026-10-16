@@ -221,7 +221,21 @@ Tarayıcı                                   Sunucu
 
 **Demo hesabı:** Giriş ekranındaki "Demo hesabıyla dene" düğmesi, Figma tasarımındaki örnek oyuncu (Atahan) olarak giriş yapar. Hoca ve ekip kayıt olmadan uygulamayı deneyebilir.
 
+### Dashboard: kullanıcı davranışı takibi (`/panel`)
+
+Profil → **Kullanıcı Davranışı Paneli**. Tüm sayılar `user_events` tablosundan SQL ile hesaplanır (`src/lib/dashboard.ts`), sayfa her açılışta güncel üretilir (SSR).
+
+| Bölüm | Soru | SQL'deki karşılığı |
+|---|---|---|
+| Özet kartları | Kaç kayıtlı kullanıcı, kaçı son 7 günde aktif, maçlar ne kadar dolu? | `count(DISTINCT player_id)`, ortalama `katılımcı / kontenjan` |
+| Günlük etkinlik | Kullanım artıyor mu? | `generate_series` ile son 14 gün; olay olmayan günler 0 |
+| Dönüşüm hunisi | Kayıt olanlar gerçekten oynuyor mu? | Kayıt → başkasının maçına katılan → maç organize eden |
+| Olay türleri | Kullanıcılar en çok ne yapıyor? | `GROUP BY type` |
+| Branşlar | Hangi sporda maç açılıyor, hangisi doluyor? | `GROUP BY sport` + ortalama doluluk |
+
+**Oyunlaştırma bağlantısı:** Huni ve doluluk oranı, D6 çerçevesindeki iş hedefinin (maçların dolması, oyuncuların gelmesi) ölçüsüdür. Oyun mekaniklerinin (XP, başarım, S.O.S) işe yarayıp yaramadığı bu panelden izlenir.
+
 ## 8. Sıradaki Adımlar
 
 - [ ] Şifremi unuttum (e-posta ile sıfırlama), Google ile giriş
-- [ ] **Dashboard**: `user_events` tablosundan kullanıcı davranışlarının grafikleri
+- [ ] Panelde tarih aralığı filtresi ve yalnızca yöneticinin görmesi (rol sistemi)
