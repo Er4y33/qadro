@@ -1,6 +1,6 @@
 # Qadro
 
-**Eksik oyuncu derdine son.** Qadro; futbol, basketbol ve voleybolda eksik oyuncu ya da oynanacak maç bulmayı sağlayan, oyunlaştırılmış bir spor eşleştirme uygulamasıdır.
+**Eksik oyuncu derdine son.** Qadro; futbol, basketbol, voleybol ve teniste eksik oyuncu ya da oynanacak maç bulmayı sağlayan, oyunlaştırılmış bir spor eşleştirme uygulamasıdır.
 
 Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ortak dönem projesidir.
 
@@ -38,13 +38,12 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 | `/` | Ana sayfa, spor filtresi, maç listesi | SSG + istemcide filtre (CSR) |
 | `/mac/[id]` | Maç detayı | **SSR**: kontenjan her istekte güncel |
 | `/mac/[id]/dizilim` | Saha dizilimi ve bölge seçimi | SSR + CSR |
-| `/mac/olustur` | Maç oluşturma formu | CSR |
+| `/mac/olustur` | 3 adımlı maç oluşturma (branş/format → zaman/saha → kurallar/onay) | Sunucu bileşeni + CSR form |
 | `/sohbetler` | Takım sohbetleri | Statik (SSG) |
 | `/sohbetler/[id]` | Sohbet odası | SSR |
 | `/profil` | Oyuncu kartı, radar grafiği, tema değiştirme | Statik (SSG) |
 | `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSG + harita istemcide (CSR) |
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
-
 | `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
 | `/mac/[id]/degerlendir` | Takımı Değerlendir | SSR + CSR |
 | `/sos` | S.O.S çağrısı | SSR + CSR |
@@ -98,9 +97,8 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [ ] REST API (`/api/matches`, `/api/events`)
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
-- [ ] S.O.S (Joker) sistemi
 - [ ] Kullanıcı ve yönetici dashboard'u
-- [ ] Mahalle ligleri (ISR)
+- [x] 3 adımlı Maç Oluştur, Tenis branşı
 - [x] PWA bildirimi ve ikonlar (ana ekrana ekleme)
 - [ ] Çevrimdışı çalışma (service worker)
 

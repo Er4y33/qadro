@@ -54,6 +54,7 @@ export const venues: Venue[] = [
     distanceKm: 2.4,
     driveMinutes: 8,
     amenities: ["Ücretsiz Otopark", "Sıcak Duş", "Kiralık Ayakkabı"],
+    sports: ["futbol"],
   },
   {
     id: "kmaras-merkez",
@@ -64,6 +65,7 @@ export const venues: Venue[] = [
     distanceKm: 6.1,
     driveMinutes: 14,
     amenities: ["Otopark", "Soyunma Odası"],
+    sports: ["futbol"],
   },
   {
     id: "elbistan-salon",
@@ -74,6 +76,7 @@ export const venues: Venue[] = [
     distanceKm: 3.2,
     driveMinutes: 10,
     amenities: ["Kapalı Alan", "Duş"],
+    sports: ["basketbol", "voleybol"],
   },
   {
     id: "kmaras-kapali",
@@ -84,6 +87,18 @@ export const venues: Venue[] = [
     distanceKm: 7.4,
     driveMinutes: 17,
     amenities: ["Kapalı Alan", "Tribün"],
+    sports: ["basketbol", "voleybol"],
+  },
+  {
+    id: "elbistan-tenis",
+    name: "Elbistan Tenis Kortları",
+    address: "Elbistan Gençlik Merkezi, Kahramanmaraş",
+    lat: 38.2079,
+    lng: 37.1921,
+    distanceKm: 1.8,
+    driveMinutes: 6,
+    amenities: ["Aydınlatma", "Raket Kiralama"],
+    sports: ["tenis"],
   },
 ];
 

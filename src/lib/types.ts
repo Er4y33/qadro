@@ -1,9 +1,10 @@
-export type Sport = "futbol" | "basketbol" | "voleybol";
+export type Sport = "futbol" | "basketbol" | "voleybol" | "tenis";
 
 export const SPORT_LABELS: Record<Sport, string> = {
   futbol: "Futbol",
   basketbol: "Basketbol",
   voleybol: "Voleybol",
+  tenis: "Tenis",
 };
 
 export interface Player {
@@ -38,6 +39,8 @@ export interface Venue {
   distanceKm: number;
   driveMinutes: number;
   amenities: string[];
+  /** Tesiste oynanabilen branşlar (maç oluştururken saha listesini süzmek için) */
+  sports: Sport[];
 }
 
 export interface Match {

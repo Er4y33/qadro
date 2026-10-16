@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SPORT_LABELS, type Match, type Sport } from "@/lib/types";
 import { MatchCard } from "./MatchCard";
 import { cn } from "./ui";
@@ -37,7 +38,10 @@ export function MatchFeed({ matches }: { matches: Match[] }) {
         ))}
         {visible.length === 0 && (
           <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">
-            Bu branşta şu an açık maç yok. İlk ilanı sen aç!
+            Bu branşta şu an açık maç yok.{" "}
+            <Link href="/mac/olustur" className="font-semibold text-primary">
+              İlk ilanı sen aç!
+            </Link>
           </p>
         )}
       </div>
