@@ -177,6 +177,7 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `GET /api/matches/[id]` | Tek maç | `200` · `404` |
 | `POST /api/matches/[id]/participants` | Maça katılır | `201` · `404` · `409` dolu / zaten kadroda |
 | `DELETE /api/matches/[id]/participants` | Maçtan ayrılır | `204` · `404` · `409` organizatör ayrılamaz |
+| `GET /api/health` | Uygulama ve veritabanı durumu (`postgres` = Supabase, `pglite` = gömülü) | `200` · `503` veritabanına ulaşılamıyor |
 
 Denemek için (sunucu açıkken):
 
