@@ -1,34 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, ChevronLeft, Clock, Globe, Lock, MapPin, PartyPopper, Users, X } from "lucide-react";
 import { SPORT_LABELS, type Sport, type Venue } from "@/lib/types";
+import { FORMATS, SPORT_EMOJI } from "@/lib/sports";
 import { cn } from "./ui";
-
-/** Her branşın format seçenekleri ve toplam oyuncu sayısı */
-const FORMATS: Record<Sport, { label: string; players: number }[]> = {
-  futbol: [
-    { label: "5v5", players: 10 },
-    { label: "6v6", players: 12 },
-    { label: "7v7", players: 14 },
-    { label: "8v8", players: 16 },
-  ],
-  basketbol: [
-    { label: "3v3", players: 6 },
-    { label: "5v5", players: 10 },
-  ],
-  voleybol: [
-    { label: "4v4", players: 8 },
-    { label: "6v6", players: 12 },
-  ],
-  tenis: [
-    { label: "Tekler", players: 2 },
-    { label: "Çiftler", players: 4 },
-  ],
-};
-
-const SPORT_EMOJI: Record<Sport, string> = { futbol: "⚽", basketbol: "🏀", voleybol: "🏐", tenis: "🎾" };
 
 const TIMES = ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
 const STEPS = ["Branş ve Format", "Zaman ve Konum", "Kurallar ve Onay"];
@@ -54,9 +31,23 @@ function nextDays(count: number): DayOption[] {
   });
 }
 
+/** Seçilen gün ve saati Türkiye saatiyle ISO tarihe çevirir (Türkiye yaz saati uygulamaz, hep UTC+3) */
+const toIso = (date: string, time: string) => `${date}T${time}:00+03:00`;
+
+/** Otomatik başlık önerisi: "Cumartesi Akşamı Tenis" */
+function suggestTitle(day: DayOption | undefined, time: string | null, sport: Sport) {
+  const hour = time ? Number(time.slice(0, 2)) : 20;
+  const part = hour < 12 ? "Sabahı" : hour < 17 ? "Öğleden Sonra" : "Akşamı";
+  const weekday = day ? new Intl.DateTimeFormat("tr-TR", { weekday: "long" }).format(new Date(`${day.iso}T12:00:00`)) : "";
+  return `${weekday} ${part} ${SPORT_LABELS[sport]}`.trim();
+}
+
 export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]; organizedBefore: number }) {
   const [step, setStep] = useState(0);
-  const [published, setPublished] = useState(false);
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [pending, startTransition] = useTransition();
+  const [title, setTitle] = useState("");
 
   const [sport, setSport] = useState<Sport>("futbol");
   const [format, setFormat] = useState(FORMATS.futbol[2].label);
@@ -84,18 +75,35 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
     setSport(s);
     setFormat(FORMATS[s][0].label);
     setVenueId(null);
+    setTitle("");
   };
 
-  const canContinue = [true, Boolean(date && time && venue), price >= 0 && minLevel >= 1][step];
+  /** Bugün seçiliyse geçmiş saatler seçilemez */
+  const isPast = (t: string) => Boolean(date && new Date(toIso(date, t)).getTime() < Date.now());
+
+  const canContinue = [true, Boolean(date && time && venue && !isPast(time)), title.trim().length >= 3 && price >= 0 && minLevel >= 1][step];
+
+  const publish = () =>
+    startTransition(async () => {
+      setErrors([]);
+      // REST API: başarılıysa 201 Created ve yeni maçın kimliği döner
+      const res = await fetch("/api/matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, sport, format, venueId, startsAt: toIso(date!, time!), price, minLevel, isPublic, note }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 201) setCreatedId(body.id);
+      else setErrors(body.errors ?? [body.error ?? "Maç oluşturulamadı."]);
+    });
 
   const next = () => {
+    if (step === 1 && !title) setTitle(suggestTitle(day, time, sport));
     if (step < STEPS.length - 1) return setStep(step + 1);
-    // TODO: Supabase bağlanınca POST /api/matches (başarılıysa 201 Created) ve "match_created" olayı kaydedilecek.
-    console.info("Yeni maç", { sport, format, date, time, venueId, price, minLevel, isPublic, note });
-    setPublished(true);
+    publish();
   };
 
-  if (published && venue && day && time) {
+  if (createdId && venue && day && time) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <span className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -118,7 +126,13 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
           </p>
         </div>
 
-        <Link href="/" className="mt-8 w-full rounded-xl bg-primary py-3.5 font-bold text-on-primary shadow-lg shadow-primary/30">
+        <Link
+          href={`/mac/${createdId}`}
+          className="mt-8 w-full rounded-xl bg-primary py-3.5 font-bold text-on-primary shadow-lg shadow-primary/30"
+        >
+          Maça Git
+        </Link>
+        <Link href="/" className="mt-3 text-sm font-semibold text-muted">
           Ana Sayfaya Dön
         </Link>
       </main>
@@ -204,7 +218,7 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
           <>
             <section>
               <h2 className="mb-3 font-bold">Gün</h2>
-              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {days.map((d) => (
                   <button
                     key={d.iso}
@@ -231,9 +245,10 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                     key={t}
                     type="button"
                     aria-pressed={time === t}
+                    disabled={isPast(t)}
                     onClick={() => setTime(t)}
                     className={cn(
-                      "flex items-center justify-center gap-1 rounded-xl border py-2.5 text-sm font-semibold transition",
+                      "flex items-center justify-center gap-1 rounded-xl border py-2.5 text-sm font-semibold transition disabled:opacity-30",
                       time === t ? "border-primary bg-primary text-on-primary" : "border-line bg-surface",
                     )}
                   >
@@ -277,6 +292,16 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
 
         {step === 2 && (
           <>
+            <label className="block rounded-xl border border-line bg-surface px-3 py-2">
+              <span className="block text-[11px] text-muted">Maç Başlığı</span>
+              <input
+                value={title}
+                maxLength={60}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-transparent font-semibold outline-none"
+              />
+            </label>
+
             <section className="grid grid-cols-2 gap-3">
               <label className="rounded-xl border border-line bg-surface px-3 py-2">
                 <span className="block text-[11px] text-muted">Kişi Başı Ücret</span>
@@ -361,13 +386,20 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
       </div>
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-bg/95 px-5 pt-3 pb-6 backdrop-blur">
+        {errors.length > 0 && (
+          <ul className="mb-2 space-y-0.5 text-center text-xs font-semibold text-danger">
+            {errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
         <button
           type="button"
-          disabled={!canContinue}
+          disabled={!canContinue || pending}
           onClick={next}
           className="w-full rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30 transition disabled:opacity-40 disabled:shadow-none"
         >
-          {step < STEPS.length - 1 ? `Devam Et (${STEPS[step + 1]})` : "Maçı Yayınla"}
+          {step < STEPS.length - 1 ? `Devam Et (${STEPS[step + 1]})` : pending ? "Yayınlanıyor..." : "Maçı Yayınla"}
         </button>
       </div>
     </main>

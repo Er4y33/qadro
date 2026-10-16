@@ -1,17 +1,57 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import type { LineupSlot } from "@/lib/types";
+import type { LineupSlot, Sport } from "@/lib/types";
 import { Avatar, cn } from "./ui";
 
-/** Boş kalan bölgeler. Şimdilik sabit; ileride maçın formatına göre hesaplanacak. */
-const OPEN_ZONES = [{ id: "orta-saha", label: "Orta Saha", x: 50, y: 50 }];
+/** Sahada seçilebilecek bölgeler. Dolu olanlar (başka bir oyuncunun durduğu yer) gösterilmez. */
+const ZONES = [
+  { id: "orta-saha", label: "Orta Saha", short: "OS", x: 50, y: 50 },
+  { id: "sol-bek", label: "Sol Bek", short: "SolB", x: 16, y: 52 },
+  { id: "sag-bek", label: "Sağ Bek", short: "SağB", x: 84, y: 52 },
+  { id: "libero", label: "Libero", short: "Lib", x: 50, y: 74 },
+];
 
-export function LineupPicker({ matchId, lineup }: { matchId: string; lineup: LineupSlot[] }) {
+export function LineupPicker({
+  matchId,
+  lineup,
+  alreadyJoined,
+  full,
+}: {
+  matchId: string;
+  lineup: LineupSlot[];
+  sport: Sport;
+  alreadyJoined: boolean;
+  full: boolean;
+}) {
+  const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
-  const zone = OPEN_ZONES.find((z) => z.id === selected);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const taken = (z: { x: number; y: number }) => lineup.some((s) => Math.abs(s.x - z.x) < 8 && Math.abs(s.y - z.y) < 8);
+  const openZones = alreadyJoined || full ? [] : ZONES.filter((z) => !taken(z));
+  const zone = openZones.find((z) => z.id === selected);
+
+  const join = () =>
+    zone &&
+    startTransition(async () => {
+      setError(null);
+      const res = await fetch(`/api/matches/${matchId}/participants`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ position: zone.short, x: zone.x, y: zone.y }),
+      });
+      if (res.ok) {
+        router.push(`/mac/${matchId}`);
+        router.refresh();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Katılım başarısız oldu.");
+        router.refresh();
+      }
+    });
 
   return (
     <>
@@ -38,7 +78,7 @@ export function LineupPicker({ matchId, lineup }: { matchId: string; lineup: Lin
             </div>
           ))}
 
-          {OPEN_ZONES.map((z) => (
+          {openZones.map((z) => (
             <button
               key={z.id}
               type="button"
@@ -64,13 +104,20 @@ export function LineupPicker({ matchId, lineup }: { matchId: string; lineup: Lin
       </div>
 
       <div className="px-5 pt-5">
-        {zone ? (
-          <Link
-            href={`/mac/${matchId}?katildi=1`}
-            className="block rounded-xl bg-success py-3.5 text-center font-semibold text-on-primary shadow-lg shadow-success/30"
+        {error && <p className="mb-2 text-center text-xs font-semibold text-danger">{error}</p>}
+        {alreadyJoined ? (
+          <p className="rounded-xl border border-dashed border-line py-3.5 text-center text-sm text-muted">Zaten kadrodasın</p>
+        ) : full ? (
+          <p className="rounded-xl border border-dashed border-line py-3.5 text-center text-sm text-muted">Kadro dolu</p>
+        ) : zone ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={join}
+            className="block w-full rounded-xl bg-success py-3.5 text-center font-semibold text-on-primary shadow-lg shadow-success/30 disabled:opacity-50"
           >
-            {zone.label} Olarak Katıl
-          </Link>
+            {pending ? "Katılınıyor..." : `${zone.label} Olarak Katıl`}
+          </button>
         ) : (
           <p className="rounded-xl border border-dashed border-line py-3.5 text-center text-sm text-muted">
             Sahada boş bir bölgeye dokun

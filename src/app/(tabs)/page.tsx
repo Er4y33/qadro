@@ -2,9 +2,15 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { MatchFeed } from "@/components/MatchFeed";
-import { currentUser, matches } from "@/lib/mock-data";
+import { currentUser } from "@/lib/mock-data";
+import { listMatches } from "@/lib/matches";
+import { CURRENT_PLAYER_ID } from "@/lib/session";
 
-export default function HomePage() {
+// Maçlar veritabanından her istekte okunur (SSR); filtreleme tarayıcıda (CSR).
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const matches = await listMatches(CURRENT_PLAYER_ID);
   return (
     <div className="px-5 pt-6">
       <header className="flex items-center justify-between">

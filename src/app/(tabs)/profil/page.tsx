@@ -3,14 +3,14 @@ import { ChevronRight, Star, Trophy } from "lucide-react";
 import { Avatar, SectionTitle } from "@/components/ui";
 import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { currentUser, matches } from "@/lib/mock-data";
+import { currentUser } from "@/lib/mock-data";
 import { levelFromXp } from "@/lib/gamification";
 import { evaluateBadges } from "@/lib/badges";
 import { BadgeGrid } from "@/components/BadgeGrid";
 
 export default function ProfilePage() {
   const { level, current, needed } = levelFromXp(currentUser.totalXp);
-  const lastMatch = matches[0];
+  const lastMatch = currentUser.recentMatch;
   const badges = evaluateBadges(currentUser.stats);
 
   return (

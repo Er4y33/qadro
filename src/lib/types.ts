@@ -32,6 +32,8 @@ export interface LineupSlot {
 export interface Venue {
   id: string;
   name: string;
+  /** Kartlarda kullanılan kısa ad */
+  shortName: string;
   address: string;
   lat: number;
   lng: number;
@@ -51,11 +53,16 @@ export interface Match {
   format: string;
   venue: string;
   venueShort: string;
+  /** ISO tarih-saat (veritabanındaki starts_at) */
+  startsAt: string;
+  /** "Bugün", "Yarın", "Pazar", "24 Eki" … (Türkiye saatine göre hesaplanır) */
   dayLabel: string;
   time: string;
+  isPublic: boolean;
   pricePerPerson: number;
   capacity: number;
   joined: number;
+  /** Maç 24 saatten az kaldıysa ve eksik varsa "acil" */
   tag: "yeni" | "acil";
   minLevel: number;
   organizer: Player;

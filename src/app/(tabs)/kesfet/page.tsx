@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { QadroMap, type MapPin as Pin } from "@/components/map/QadroMap";
-import { getVenue, matches } from "@/lib/mock-data";
+import { getVenue } from "@/lib/mock-data";
+import { listMatches } from "@/lib/matches";
+import { CURRENT_PLAYER_ID } from "@/lib/session";
 
-export default function ExplorePage() {
+export const dynamic = "force-dynamic";
+
+export default async function ExplorePage() {
+  const matches = await listMatches(CURRENT_PLAYER_ID);
   const items = matches.flatMap((match) => {
     const venue = getVenue(match.venueId);
     return venue ? [{ match, venue }] : [];

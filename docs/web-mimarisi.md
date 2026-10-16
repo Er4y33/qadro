@@ -58,9 +58,9 @@ Tarayıcı (istemci)                     Sunucu (Next.js / Vercel)
 | Aralık | Anlamı | Qadro'daki örnek |
 |---|---|---|
 | **1xx** | Bilgilendirme | Doğrudan kullanılmıyor |
-| **2xx** | Başarılı | `200 OK`: sayfa açıldı · `201 Created`: yeni maç oluşturuldu *(planlanan API)* |
+| **2xx** | Başarılı | `200 OK`: sayfa açıldı · `201 Created`: yeni maç oluşturuldu · `204 No Content`: maçtan ayrıldın |
 | **3xx** | Yönlendirme (kaynak taşındı) | `301/308`: kalıcı yönlendirme · `307`: geçici yönlendirme |
-| **4xx** | **İstemci** hatası | `404`: olmayan bir maç adresi · `401`: giriş yapılmamış · `409`: maç dolu *(planlanan)* |
+| **4xx** | **İstemci** hatası | `400`: eksik/hatalı form · `404`: olmayan bir maç · `409`: maç dolu ya da zaten kadrodasın · `401`: giriş yapılmamış *(planlanan)* |
 | **5xx** | Sunucu hatası | `500`: sunucuda beklenmeyen hata |
 
 **Not:** Ders notunda 4xx "işlemci hatası" olarak geçiyor. Doğrusu **istemci (client) hatası**: isteği gönderen tarafın hatası, örneğin yanlış adres ya da eksik yetki.
@@ -83,7 +83,7 @@ Olmayan bir adres denenirse, örneğin `/mac/olmayan-mac`, Next.js `notFound()` 
 | **Hız** | Çok hızlı | Daha yavaş |
 | **Esneklik** | Herkese aynı içerik | Kişiye özel içerik |
 | **Karmaşıklık** | Basit | Daha karmaşık |
-| **Qadro'da** | Giriş, tanıtım, saha sayfaları | Maç detayı, sohbet odası |
+| **Qadro'da** | Giriş, tanıtım, saha sayfaları | Ana sayfa, maç detayı, keşfet (veritabanından) |
 
 Qadro **ikisini birlikte** kullanır. Next.js her sayfa için ayrı strateji seçmeye izin verir.
 
@@ -94,7 +94,7 @@ Qadro **ikisini birlikte** kullanır. Next.js her sayfa için ayrı strateji se�
 | Strateji | Açılımı | Nerede, ne zaman üretilir? | Qadro'daki sayfa | Koddaki karşılığı |
 |---|---|---|---|---|
 | **SSG** | Static Site Generation | Sunucuda, **build anında** bir kez | `/giris`, `/hosgeldin`, `/saha/[id]` | Varsayılan; dinamik sayfalarda `generateStaticParams()` |
-| **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/mac/[id]`: kontenjan hep güncel olmalı | `export const dynamic = "force-dynamic"` |
+| **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/`, `/mac/[id]`: maçlar ve kontenjan veritabanından, hep güncel | `export const dynamic = "force-dynamic"` |
 | **CSR** | Client-Side Rendering | **Tarayıcıda**, JavaScript ile | Maç oluşturma formu, harita, spor filtresi | Dosyanın başında `"use client"` |
 | **ISR** | Incremental Static Regeneration | Statik, belirli aralıklarla **arka planda yenilenir** | `/siralama`: Şehrin En İyileri | `export const revalidate = 300` |
 
@@ -148,8 +148,48 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 
 ---
 
-## 7. Sıradaki Adımlar
+## 7. Veritabanı ve REST API
 
-- [ ] Supabase: kimlik doğrulama ve PostgreSQL veritabanı
-- [ ] REST API: `POST /api/matches` (201), `GET /api/matches/[id]` (200 / 404)
-- [ ] Olay günlüğü (`user_events`) ve **dashboard**: kullanıcıların yaptıklarının izlenmesi
+### Veritabanı
+
+| Ortam | Veritabanı | Kurulum |
+|---|---|---|
+| Geliştirme (`npm run dev`) | **PGlite**: WebAssembly ile çalışan gömülü PostgreSQL. Veriler `.qadro-db/` klasöründe | Gerekmez |
+| Canlı (Vercel) | **Supabase** (PostgreSQL) | `DATABASE_URL` ya da `POSTGRES_URL` ortam değişkeni |
+
+İkisinde de **aynı SQL** çalışır (`src/lib/db/`). Tablolar ilk istekte oluşturulur, boşsa örnek veri eklenir.
+
+| Tablo | İçerik |
+|---|---|
+| `players` | Oyuncular |
+| `matches` | Maçlar (branş, format, tarih, kontenjan, ücret, gizlilik) |
+| `match_participants` | Kim hangi maçta, sahada hangi bölgede |
+| `user_events` | Kullanıcı davranışları: `match_created`, `match_joined`, `match_left` → **dashboard** bunu kullanacak |
+
+**Eşzamanlılık:** Son boş yere iki kişi aynı anda tıklarsa ikisi de girmesin diye kontenjan kontrolü ve ekleme **tek SQL cümlesinde** yapılır (`src/lib/matches.ts → joinMatch`). Kaybeden taraf `409 Conflict` alır.
+
+### REST API
+
+| Metot ve adres | Ne yapar | Yanıtlar |
+|---|---|---|
+| `GET /api/matches` | Maç listesi | `200` |
+| `POST /api/matches` | Maç oluşturur | `201` + `Location` başlığı · `400` doğrulama hatası |
+| `GET /api/matches/[id]` | Tek maç | `200` · `404` |
+| `POST /api/matches/[id]/participants` | Maça katılır | `201` · `404` · `409` dolu / zaten kadroda |
+| `DELETE /api/matches/[id]/participants` | Maçtan ayrılır | `204` · `404` · `409` organizatör ayrılamaz |
+
+Denemek için (sunucu açıkken):
+
+```bash
+curl -i http://localhost:3000/api/matches/olmayan-mac          # 404
+curl -i -X POST http://localhost:3000/api/matches/elbistan-basket/participants   # 201, ikinci kez 409
+```
+
+Tarayıcıda F12 → **Network** sekmesinde de "Maça Katıl" dendiğinde giden `POST` isteği ve dönen `201` görülebilir.
+
+**Not:** Kimlik doğrulama henüz yok; tüm işlemler demo kullanıcı (`src/lib/session.ts`) adına yapılır.
+
+## 8. Sıradaki Adımlar
+
+- [ ] Supabase Auth: gerçek kullanıcı girişi (`401` durum kodu)
+- [ ] **Dashboard**: `user_events` tablosundan kullanıcı davranışlarının grafikleri

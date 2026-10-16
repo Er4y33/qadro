@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Copy, Plus, SendHorizontal } from "lucide-react";
 import { Avatar } from "@/components/ui";
-import { chatMessages, chats, getMatch } from "@/lib/mock-data";
+import { chatMessages, chats } from "@/lib/mock-data";
+import { getMatch } from "@/lib/matches";
 
 export default async function ChatRoomPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const chat = chats.find((c) => c.id === id);
   if (!chat) notFound();
-  const match = getMatch(id);
+  const match = await getMatch(id);
 
   return (
     <>

@@ -16,7 +16,8 @@ Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ort
 | İkonlar | lucide-react |
 | Harita | Leaflet + OpenStreetMap (ücretsiz, API anahtarı gerekmez) |
 | Yayın | Vercel |
-| Veritabanı (planlanan) | Supabase (PostgreSQL + Auth) |
+| Veritabanı | PostgreSQL: yerelde gömülü **PGlite**, canlıda **Supabase** |
+| API | Next.js Route Handlers ile REST (`/api/matches`) |
 
 ## Kurulum
 
@@ -27,6 +28,8 @@ npm install
 npm run dev
 ```
 
+Ayrı bir veritabanı kurmaya gerek yoktur: ilk açılışta proje klasöründe `.qadro-db/` oluşur ve örnek maçlar eklenir. Sıfırlamak için bu klasörü silmek yeterlidir.
+
 Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli tasarlandığı için en iyi görünüm tarayıcının mobil görünümündedir (F12 → cihaz simgesi).
 
 ## Ekranlar
@@ -35,14 +38,14 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 |---|---|---|
 | `/hosgeldin` | Tanıtım (3 adım) | Statik (SSG) |
 | `/giris` | Giriş | Statik (SSG) |
-| `/` | Ana sayfa, spor filtresi, maç listesi | SSG + istemcide filtre (CSR) |
-| `/mac/[id]` | Maç detayı | **SSR**: kontenjan her istekte güncel |
-| `/mac/[id]/dizilim` | Saha dizilimi ve bölge seçimi | SSR + CSR |
+| `/` | Ana sayfa, spor filtresi, maç listesi (veritabanından) | **SSR** + istemcide filtre (CSR) |
+| `/mac/[id]` | Maç detayı, katıl / ayrıl | **SSR**: kontenjan her istekte veritabanından |
+| `/mac/[id]/dizilim` | Saha dizilimi, bölge seçerek katılma | SSR + CSR |
 | `/mac/olustur` | 3 adımlı maç oluşturma (branş/format → zaman/saha → kurallar/onay) | Sunucu bileşeni + CSR form |
 | `/sohbetler` | Takım sohbetleri | Statik (SSG) |
 | `/sohbetler/[id]` | Sohbet odası | SSR |
 | `/profil` | Oyuncu kartı, radar grafiği, tema değiştirme | Statik (SSG) |
-| `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSG + harita istemcide (CSR) |
+| `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSR + harita istemcide (CSR) |
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
 | `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
 | `/mac/[id]/degerlendir` | Takımı Değerlendir | SSR + CSR |
@@ -54,6 +57,7 @@ Tarayıcıda `http://localhost:3000` adresini açın. Uygulama mobil öncelikli 
 ```
 src/
 ├── app/                 # Sayfalar (her klasör bir URL)
+│   ├── api/matches/     # REST API
 │   ├── (tabs)/          # Alt menülü sekmeler: /, /kesfet, /sohbetler, /profil (+ açılış ekranı)
 │   ├── mac/             # Maç detayı, dizilim, oluşturma
 │   ├── sohbetler/[id]/  # Sohbet odası
@@ -65,7 +69,9 @@ src/
 │   └── map/             # Harita (yalnızca tarayıcıda yüklenir)
 └── lib/
     ├── types.ts         # Veri tipleri
-    ├── mock-data.ts     # Geçici örnek veri
+    ├── db/              # Veritabanı bağlantısı, şema ve örnek veri
+    ├── matches.ts       # Maç sorguları (listele, oluştur, katıl, ayrıl)
+    ├── mock-data.ts     # Saha kataloğu, profil ve sohbet örnekleri
     └── gamification.ts  # XP, seviye ve güvenilirlik kuralları
 ```
 
@@ -93,8 +99,9 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 
 - [x] Proje iskeleti, Git deposu ([1. hafta](docs/hafta-01-ilk-git-deposu.md))
 - [x] Figma ekranlarının koda aktarılması
-- [ ] Supabase ile kimlik doğrulama ve veritabanı
-- [ ] REST API (`/api/matches`, `/api/events`)
+- [x] PostgreSQL veritabanı (PGlite / Supabase) ve REST API: maç oluşturma, katılma, ayrılma
+- [x] Olay günlüğü (`user_events`)
+- [ ] Supabase Auth ile kimlik doğrulama
 - [x] Harita (Leaflet + OpenStreetMap), Saha Konumu ekranı
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
 - [ ] Kullanıcı ve yönetici dashboard'u
