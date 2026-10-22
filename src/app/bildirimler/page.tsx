@@ -2,12 +2,24 @@ import Link from "next/link";
 import { CheckCheck, ChevronLeft, Star } from "lucide-react";
 import { Avatar, cn } from "@/components/ui";
 import { players } from "@/lib/mock-data";
+import { SosInbox } from "@/components/SosInbox";
+import { BADGES } from "@/lib/badges";
+import { getProfile } from "@/lib/players";
+import { requireViewer } from "@/lib/session";
+import { listOpenSos } from "@/lib/sos";
+
+// Açık S.O.S çağrıları her açılışta veritabanından okunur
+export const dynamic = "force-dynamic";
 
 /**
  * Bildirimler. Hook modelindeki "tetikleyici" adımıdır: kullanıcıyı uygulamaya geri getiren dış uyaran.
  * Bildirimler yalnızca eyleme dönüşebilen olaylar için gönderilir (S.O.S, davet, övgü, puan değişimi).
+ * S.O.S çağrıları veritabanından gelir (src/lib/sos.ts); davet ve övgü kartları şimdilik örnektir.
  */
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const viewer = await requireViewer();
+  const [calls, profile] = await Promise.all([listOpenSos(viewer.id), getProfile(viewer)]);
+  const rescuer = BADGES.find((b) => b.id === "kurtarici")!;
   return (
     <main className="flex-1 px-5 pt-5 pb-10">
       <header className="grid grid-cols-[40px_1fr_40px] items-center">
@@ -21,30 +33,15 @@ export default function NotificationsPage() {
       </header>
 
       <h2 className="mt-8 mb-3 flex items-center gap-2 text-xs font-bold tracking-wide text-muted">
-        YENİ <span className="rounded-md bg-primary/15 px-1.5 text-primary">3</span>
+        S.O.S ÇAĞRILARI <span className="rounded-md bg-danger/15 px-1.5 text-danger">{calls.length}</span>
+      </h2>
+      <SosInbox calls={calls} rescuerProgress={{ current: profile.stats.sosAnswered, target: rescuer.target }} />
+
+      <h2 className="mt-8 mb-3 flex items-center gap-2 text-xs font-bold tracking-wide text-muted">
+        YENİ <span className="rounded-md bg-primary/15 px-1.5 text-primary">2</span>
       </h2>
 
       <ul className="space-y-3">
-        {/* S.O.S */}
-        <li>
-          <Link
-            href="/sos?mac=cuma-aksami-hali-saha"
-            className="flex gap-3 rounded-2xl border-2 border-danger/70 bg-danger/10 p-4"
-          >
-            <span className="relative mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-danger/60">
-              <span className="h-3 w-3 animate-pulse rounded-full bg-danger" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-bold">Acil Kaleci Aranıyor!</p>
-                <span className="text-[11px] font-bold text-danger">ŞİMDİ</span>
-              </div>
-              <p className="text-xs text-muted">Onikişubat Tesisleri • Başlamasına 45 dk var</p>
-              <p className="mt-2 text-xs font-bold text-danger">S.O.S KARTINI GÖR →</p>
-            </div>
-          </Link>
-        </li>
-
         {/* Davet */}
         <li className="flex gap-3 rounded-2xl border border-line bg-surface p-4">
           <Avatar player={players.ahmet} size={36} />

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Activity, CalendarCheck, Percent, Users } from "lucide-react";
+import { Activity, CalendarCheck, Crown, Flame, Handshake, LifeBuoy, Percent, UserX, Users } from "lucide-react";
 import { ScreenHeader, SectionTitle } from "@/components/ui";
-import { getDashboard } from "@/lib/dashboard";
+import { getDashboard, getGamificationMetrics } from "@/lib/dashboard";
 import { requireViewer } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Kullanıcı Davranışı Paneli | Qadro" };
@@ -25,7 +25,7 @@ const timeFmt = new Intl.DateTimeFormat("tr-TR", {
 
 export default async function DashboardPage() {
   await requireViewer();
-  const data = await getDashboard();
+  const [data, game] = await Promise.all([getDashboard(), getGamificationMetrics()]);
   const maxDaily = Math.max(1, ...data.daily.map((d) => d.events));
   const totalEvents = data.byType.reduce((sum, t) => sum + t.count, 0);
 
@@ -45,6 +45,33 @@ export default async function DashboardPage() {
           <Kpi icon={Activity} value={data.kpis.active7d} label="Son 7 günde aktif" />
           <Kpi icon={CalendarCheck} value={data.kpis.openMatches} label="Yaklaşan maç" />
           <Kpi icon={Percent} value={`%${data.kpis.avgFill}`} label="Ortalama doluluk" />
+        </section>
+
+        {/* Oyunlaştırmanın işe yarayıp yaramadığı: D6'nın 1. adımında tanımlanan ölçütler */}
+        <section aria-label="Oyunlaştırma ölçütleri">
+          <SectionTitle>Oyunlaştırma Ölçütleri</SectionTitle>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+            <Kpi
+              icon={UserX}
+              value={game.noShowRate === null ? "–" : `%${game.noShowRate}`}
+              label={`Gelmeme oranı (${game.decidedAttendances} kesin, ${game.pendingAttendances} oy bekliyor)`}
+            />
+            <Kpi
+              icon={LifeBuoy}
+              value={game.sos.avgResponseMinutes === null ? "–" : `${game.sos.avgResponseMinutes.toLocaleString("tr-TR")} dk`}
+              label={`S.O.S yanıt süresi (${game.sos.answered} / ${game.sos.total} çağrı yanıtlandı)`}
+            />
+            <Kpi
+              icon={Handshake}
+              value={game.reviewParticipation === null ? "–" : `%${game.reviewParticipation}`}
+              label="Maç sonu değerlendirme katılımı"
+            />
+            <Kpi icon={Crown} value={game.mvpVotes} label="MVP oyu" />
+            <Kpi icon={Flame} value={game.activeStreaks} label="2+ haftalık serisi süren oyuncu" />
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            Hedef: gelmeme oranını düşürmek ve S.O.S yanıt süresini kısaltmak. Gelmeme kararı en az 3 oy ve çoğunlukla verilir.
+          </p>
         </section>
 
         <section>

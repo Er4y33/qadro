@@ -199,7 +199,12 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `POST /api/auth/login` | Giriş yapar | `200` + `Set-Cookie` · `401` e-posta ya da şifre hatalı |
 | `POST /api/auth/logout` | Çıkış yapar | `204` |
 | `GET /api/auth/me` | Giriş yapan oyuncu | `200` · `401` |
-| `POST /api/matches/[id]/reviews` | Maç sonu "Takımı Değerlendir" | `201` · `400` · `401` · `403` bu maçta oynamadın · `404` · `409` maç oynanmadı / zaten değerlendirdin |
+| `POST /api/matches/[id]/reviews` | Maç sonu "Takımı Değerlendir" (isteğe bağlı `mvpId`: Maçın Oyuncusu oyu) | `201` · `400` · `401` · `403` bu maçta oynamadın · `404` · `409` maç oynanmadı / zaten değerlendirdin |
+| `GET /api/sos` | Giriş yapan oyuncuya açık S.O.S çağrıları | `200` · `401` |
+| `POST /api/sos` | S.O.S çağrısı başlatır `{ matchId, position }` | `201` · `400` · `401` · `403` kadroda değilsin · `404` · `409` kadro tam / açık çağrı var |
+| `POST /api/sos/[id]/answer` | Çağrıyı kabul eder, kadroya katılır | `201` · `401` · `404` · `409` başkası yanıtladı / maç doldu |
+| `GET /api/season` | İçinde bulunulan sezonun XP sıralaması | `200` |
+| `POST /api/demo/start` | Demo maçlarını yeniden kurar, demo oyuncusu olarak oturum açar | `201` + `Set-Cookie` |
 | `GET /api/health` | Uygulama ve veritabanı durumu (`postgres` = Supabase, `pglite` = gömülü) | `200` · `503` veritabanına ulaşılamıyor |
 
 Denemek için (sunucu açıkken):

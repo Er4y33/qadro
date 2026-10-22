@@ -84,6 +84,30 @@ CREATE TABLE IF NOT EXISTS match_reviews (
 );
 CREATE INDEX IF NOT EXISTS match_reviews_target_idx ON match_reviews (target_id);
 
+-- Maçın Oyuncusu (MVP) oyları: her oyuncu bir maçta en fazla bir takım arkadaşını seçer.
+CREATE TABLE IF NOT EXISTS match_mvp_votes (
+  match_id   text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  voter_id   text NOT NULL REFERENCES players(id),
+  target_id  text NOT NULL REFERENCES players(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (match_id, voter_id),
+  CHECK (voter_id <> target_id)
+);
+
+-- S.O.S çağrıları: eksik kadro için yakındaki oyunculara giden acil davet.
+-- answered_by dolunca çağrı kapanır; yanıt süresi (answered_at - created_at) panelde ölçülür.
+CREATE TABLE IF NOT EXISTS sos_calls (
+  id           bigserial PRIMARY KEY,
+  match_id     text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  position     text NOT NULL,
+  created_by   text NOT NULL REFERENCES players(id),
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  expires_at   timestamptz NOT NULL,
+  answered_by  text REFERENCES players(id),
+  answered_at  timestamptz
+);
+CREATE INDEX IF NOT EXISTS sos_calls_open_idx ON sos_calls (expires_at) WHERE answered_by IS NULL;
+
 CREATE INDEX IF NOT EXISTS matches_starts_at_idx ON matches (starts_at);
 CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at);
 
@@ -96,4 +120,6 @@ ALTER TABLE match_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE match_mvp_votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sos_calls ENABLE ROW LEVEL SECURITY;
 `;

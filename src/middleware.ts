@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * Burada yalnızca çerezin VAR olup olmadığına bakılır (hızlı, veritabanına gitmez).
  * Çerezin gerçekten geçerli olup olmadığını sayfalar ve API sunucuda kontrol eder.
  */
-const PUBLIC_PATHS = ["/hosgeldin", "/giris", "/kayit", "/saha"];
+const PUBLIC_PATHS = ["/hosgeldin", "/giris", "/kayit", "/saha", "/demo"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

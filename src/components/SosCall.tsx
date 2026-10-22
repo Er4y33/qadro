@@ -2,24 +2,39 @@
 
 import { POSITIONS } from "@/lib/sports";
 import type { Sport } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { DISTRICT } from "@/lib/leaderboard";
 import { cn } from "./ui";
 
-/** Bildirimin gideceği uygun oyuncu sayısı. API bağlanınca konum ve seviyeye göre hesaplanacak. */
+/** Bildirimin gideceği uygun oyuncu sayısı. Konum ve seviyeye göre hesaplama ileride eklenecek; şimdilik temsilî. */
 const NEARBY_PLAYERS = 24;
 
 /**
  * S.O.S (Joker) çağrısı: Maça kısa süre kala eksik kalan kadroyu tamamlamak için
  * çevredeki uygun oyunculara öncelikli bildirim gönderir.
+ * Çağrı POST /api/sos ile veritabanına kaydedilir ve kadroda olmayan oyuncuların Bildirimler ekranına düşer.
  * Oyunlaştırma: Çağrıya yanıt veren oyuncu "Kurtarıcı" başarımına ilerler (Philanthropist tipi).
  */
 export function SosCall({ matchId, matchTitle, sport }: { matchId: string; matchTitle: string; sport: Sport }) {
   const positions = POSITIONS[sport];
   const [position, setPosition] = useState(positions[0]);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const send = () =>
+    startTransition(async () => {
+      setError(null);
+      const res = await fetch("/api/sos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId, position }),
+      });
+      if (res.status === 201) setSent(true);
+      else setError(((await res.json().catch(() => ({}))) as { error?: string }).error ?? "Çağrı gönderilemedi.");
+    });
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   // Geri sayım yalnızca tarayıcıda başlar; sunucu ile istemci arasında saat farkı oluşmasın diye.
@@ -66,7 +81,7 @@ export function SosCall({ matchId, matchTitle, sport }: { matchId: string; match
       <h1 className="mt-8 text-center text-2xl font-bold">{sent ? "Sinyal Gönderildi!" : "Acil Adam Lazım!"}</h1>
       <p className="mt-2 text-center text-sm text-muted">
         {sent
-          ? `${DISTRICT} çevresindeki ${NEARBY_PLAYERS} oyuncuya ${position.toLocaleLowerCase("tr-TR")} çağrısı ulaştı. İlk kabul eden kadroya eklenir.`
+          ? `${DISTRICT} çevresindeki oyunculara ${position.toLocaleLowerCase("tr-TR")} çağrısı ulaştı. İlk kabul eden kadroya eklenir.`
           : `${DISTRICT} çevresindeki ${NEARBY_PLAYERS} uygun oyuncuya yüksek öncelikli radar bildirimi gidecek.`}
       </p>
 
@@ -101,6 +116,8 @@ export function SosCall({ matchId, matchTitle, sport }: { matchId: string; match
         Çağrıya yanıt veren oyuncu <span className="font-semibold text-primary">Kurtarıcı</span> başarımına ilerler.
       </p>
 
+      {error && <p className="mt-4 text-center text-sm font-semibold text-danger" role="alert">{error}</p>}
+
       <div className="mt-auto pt-6">
         {sent ? (
           <Link
@@ -112,10 +129,11 @@ export function SosCall({ matchId, matchTitle, sport }: { matchId: string; match
         ) : (
           <button
             type="button"
-            onClick={() => setSent(true)}
-            className="w-full rounded-xl bg-primary py-3.5 font-bold tracking-wide text-on-primary uppercase shadow-lg shadow-primary/30"
+            onClick={send}
+            disabled={pending}
+            className="w-full disabled:opacity-60 rounded-xl bg-primary py-3.5 font-bold tracking-wide text-on-primary uppercase shadow-lg shadow-primary/30"
           >
-            Sinyali Gönder
+            {pending ? "Gönderiliyor..." : "Sinyali Gönder"}
           </button>
         )}
       </div>

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth";
-import { parseReviews, submitReviews } from "@/lib/reviews";
+import { parseMvp, parseReviews, submitReviews } from "@/lib/reviews";
 import { unauthorized } from "@/lib/session";
 
 /**
  * POST /api/matches/:id/reviews → maç sonu "Takımı Değerlendir"
- * Gövde: { reviews: [{ playerId, attended: true|false, praiseId: "taktiksel" | null }] }
+ * Gövde: { reviews: [{ playerId, attended: true|false, praiseId: "taktiksel" | null }], mvpId?: "oguz" | null }
  *
  * 201 Created · 400 gövde hatalı · 401 giriş yok
  * 403 Forbidden: bu maçın oyuncusu değilsin (giriş yapmışsın ama yetkin yok)
@@ -16,10 +16,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!viewer) return unauthorized();
   const { id } = await params;
 
-  const reviews = parseReviews(await request.json().catch(() => null));
-  if (!reviews) return NextResponse.json({ error: "Değerlendirme listesi geçersiz." }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const reviews = parseReviews(body);
+  const mvpId = parseMvp(body);
+  if (!reviews || mvpId === undefined) return NextResponse.json({ error: "Değerlendirme listesi geçersiz." }, { status: 400 });
 
-  const result = await submitReviews(id, viewer.id, reviews);
+  const result = await submitReviews(id, viewer.id, reviews, mvpId);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ xp: result.xp }, { status: 201 });
 }

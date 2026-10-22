@@ -2,7 +2,8 @@ import "server-only";
 import type { Viewer } from "./auth";
 import type { PlayerStats } from "./badges";
 import { getDb } from "./db";
-import { XP_REWARDS } from "./gamification";
+import { daysLeft, XP_REWARDS, type Streak } from "./gamification";
+import { countMvpAwards, countSosAnswered, getSeasonStandings, getStreak } from "./progress";
 import { getReputation, type Reputation } from "./reviews";
 import { currentUser, getVenue } from "./mock-data";
 
@@ -24,13 +25,18 @@ export interface Profile {
   /** Çoğunluk oyuyla "gelmedi" sayıldığı maç sayısı */
   noShows: number;
   recentMatch: { id: string; title: string; format: string; venueShort: string; reviewed: boolean } | null;
+  /** Oynanmış ama takım arkadaşlarının oylarıyla henüz onaylanmamış maçlar (XP'leri beklemede) */
+  pendingMatches: number;
+  streak: Streak;
+  season: { name: string; daysLeft: number; xp: number; rank: number | null; players: number };
 }
 
 /**
  * Profil ekranının verisi.
  * Kayıtlı oyuncularda istatistikler veritabanındaki gerçek katılım ve değerlendirmelerden hesaplanır.
- * Demo oyuncu (Atahan) Figma'daki zengin örnek profili korur; övgüler, son maç ve verdiği
- * değerlendirmeler ise onda da veritabanından gelir.
+ * Demo oyuncu (Atahan) Figma'daki zengin örnek profili korur (42 maç, 12 MVP…); üzerine veritabanındaki
+ * gerçek etkinlikleri eklenir: verdiği değerlendirmeler, yanıtladığı S.O.S çağrıları, kazandığı MVP'ler,
+ * övgüler, haftalık seri ve sezon XP'si.
  */
 export async function getProfile(viewer: Viewer): Promise<Profile> {
   const db = await getDb();
@@ -43,6 +49,24 @@ export async function getProfile(viewer: Viewer): Promise<Profile> {
      WHERE mp.player_id = $1 AND m.starts_at < now() ORDER BY m.starts_at DESC LIMIT 1`,
     [viewer.id],
   );
+  const [streak, standings, sosAnswered, mvpAwards] = await Promise.all([
+    getStreak(viewer.id),
+    getSeasonStandings(),
+    countSosAnswered(viewer.id),
+    countMvpAwards(viewer.id),
+  ]);
+  const mine = standings.entries.find((e) => e.playerId === viewer.id);
+  const season = {
+    name: standings.season.name,
+    daysLeft: daysLeft(standings.season),
+    xp: mine?.xp ?? 0,
+    rank: mine?.rank ?? null,
+    players: standings.entries.length,
+  };
+  /** Veritabanından gelen, XP kazandıran etkinlikler (maçlar hariç) */
+  const extraXp =
+    reputation.reviewsGiven * XP_REWARDS.ratedOthers + sosAnswered * XP_REWARDS.sosAnswered + mvpAwards * XP_REWARDS.mvp;
+
   const recentMatch = recent
     ? { id: recent.id, title: recent.title, format: recent.format, venueShort: getVenue(recent.venue_id)?.shortName ?? "", reviewed: recent.reviewed }
     : null;
@@ -52,14 +76,22 @@ export async function getProfile(viewer: Viewer): Promise<Profile> {
       ...viewer,
       role: currentUser.role,
       city: currentUser.city,
-      totalXp: currentUser.totalXp + reputation.reviewsGiven * XP_REWARDS.ratedOthers,
+      totalXp: currentUser.totalXp + extraXp,
       reliability: currentUser.rating,
-      mvpAwards: currentUser.mvpAwards,
-      stats: { ...currentUser.stats, ratingsGiven: currentUser.stats.ratingsGiven + reputation.ratingsGiven },
+      mvpAwards: currentUser.mvpAwards + mvpAwards,
+      stats: {
+        ...currentUser.stats,
+        ratingsGiven: currentUser.stats.ratingsGiven + reputation.ratingsGiven,
+        sosAnswered: currentUser.stats.sosAnswered + sosAnswered,
+        mvpAwards: currentUser.stats.mvpAwards + mvpAwards,
+      },
       attributes: currentUser.attributes,
       praises: reputation.praises,
       noShows: reputation.noShows,
       recentMatch,
+      pendingMatches: reputation.pending,
+      streak,
+      season,
     };
   }
 
@@ -73,31 +105,34 @@ export async function getProfile(viewer: Viewer): Promise<Profile> {
     [viewer.id],
   );
 
-  // Çoğunluk oyuyla "gelmedi" sayılan maçlar oynanmış sayılmaz
-  const played = reputation.pastMatches - reputation.noShows;
+  // Sahte maç engeli: yalnızca takım arkadaşlarının oylarıyla onaylanan maçlar oynanmış sayılır ve XP kazandırır
+  const played = reputation.confirmed;
   const stats: PlayerStats = {
     matchesPlayed: played,
     onTimeStreak: 0,
-    sosAnswered: 0,
+    sosAnswered,
     ratingsGiven: reputation.ratingsGiven,
     matchesOrganized: row.organized,
     venuesVisited: row.venues,
     sportsPlayed: row.sports,
-    mvpAwards: 0,
+    mvpAwards,
   };
 
   return {
     ...viewer,
     role: played === 0 ? "Yeni Oyuncu" : "Oyuncu",
     city: "Kahramanmaraş",
-    totalXp: played * XP_REWARDS.matchAttended + reputation.reviewsGiven * XP_REWARDS.ratedOthers,
+    totalXp: played * XP_REWARDS.matchAttended + extraXp,
     reliability: reputation.reliability,
-    mvpAwards: 0,
+    mvpAwards,
     stats,
     attributes: null,
     praises: reputation.praises,
     noShows: reputation.noShows,
     recentMatch,
+    pendingMatches: reputation.pending,
+    streak,
+    season,
   };
 }
 

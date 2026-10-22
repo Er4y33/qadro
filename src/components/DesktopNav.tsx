@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bell, Home, MessageSquare, Plus, Search, Trophy, User } from "lucide-react";
+import { BarChart3, Bell, Compass, Home, MessageSquare, Plus, Search, Trophy, User } from "lucide-react";
 import { Avatar, cn } from "./ui";
 
 const items = [
@@ -70,8 +70,15 @@ export function DesktopNav() {
         ))}
       </nav>
 
+      <Link
+        href="/demo"
+        className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-fg"
+      >
+        <Compass size={20} strokeWidth={1.8} /> Oyunlaştırma Demosu
+      </Link>
+
       {me && (
-        <Link href="/profil" className="mt-auto flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
+        <Link href="/profil" className="mt-2 flex items-center gap-3 rounded-xl border border-line px-3 py-2.5">
           <Avatar player={me} size={36} />
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold">{me.name}</span>

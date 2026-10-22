@@ -64,3 +64,105 @@ export function resolveAttendanceCounts(totalVotes: number, absentVotes: number)
   if (totalVotes < MIN_ATTENDANCE_VOTES) return null;
   return absentVotes <= totalVotes / 2;
 }
+
+/* ───────────── Maçın Oyuncusu (MVP) ───────────── */
+
+/**
+ * MVP kararı: En çok oyu alan oyuncu, en az MVP_MIN_VOTES oy aldıysa ve oy sayısında tek başına öndeyse MVP olur.
+ * Eşitlikte kimse MVP sayılmaz. Böylece iki arkadaşın birbirini seçmesi tek başına yetmez.
+ */
+export const MVP_MIN_VOTES = 2;
+
+export function resolveMvp(votes: { targetId: string; count: number }[]): string | null {
+  if (votes.length === 0) return null;
+  const max = Math.max(...votes.map((v) => v.count));
+  const leaders = votes.filter((v) => v.count === max);
+  return max >= MVP_MIN_VOTES && leaders.length === 1 ? leaders[0].targetId : null;
+}
+
+/* ───────────── Haftalık seri (Hook modeli: alışkanlık) ───────────── */
+
+const TZ = "Europe/Istanbul";
+const DAY = 86_400_000;
+
+/** Türkiye saatine göre, tarihin içinde bulunduğu haftanın pazartesisi (YYYY-MM-DD) */
+export function weekKey(date: Date): string {
+  const local = new Date(new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(date) + "T00:00:00Z");
+  const offset = (local.getUTCDay() + 6) % 7; // pazartesi = 0
+  return new Date(local.getTime() - offset * DAY).toISOString().slice(0, 10);
+}
+
+export interface Streak {
+  /** Üst üste maç oynanan hafta sayısı */
+  current: number;
+  /** Şimdiye kadarki en uzun seri */
+  best: number;
+  playedThisWeek: boolean;
+}
+
+/**
+ * Haftalık oynama serisi. "Gelmedi" kararı verilen maçlar sayılmaz.
+ * Bu hafta henüz oynanmadıysa seri bozulmaz: sayım geçen haftadan başlar.
+ * Tasarım kararı: Kayıp korkusu (loss aversion) üzerine kurulu "serin yanıyor!" uyarıları kullanılmaz;
+ * seri yalnızca bilgilendirici geri bildirimdir.
+ */
+export function weeklyStreak(matchDates: Date[], now = new Date()): Streak {
+  const weeks = new Set(matchDates.map(weekKey));
+  const thisWeek = weekKey(now);
+  const prev = (key: string) => new Date(Date.parse(key) - 7 * DAY).toISOString().slice(0, 10);
+
+  let cursor = weeks.has(thisWeek) ? thisWeek : prev(thisWeek);
+  let current = 0;
+  while (weeks.has(cursor)) {
+    current += 1;
+    cursor = prev(cursor);
+  }
+
+  let best = 0;
+  for (const key of weeks) {
+    if (weeks.has(prev(key))) continue; // serinin başlangıcı değil
+    let length = 0;
+    let k = key;
+    while (weeks.has(k)) {
+      length += 1;
+      k = new Date(Date.parse(k) + 7 * DAY).toISOString().slice(0, 10);
+    }
+    best = Math.max(best, length);
+  }
+  return { current, best: Math.max(best, current), playedThisWeek: weeks.has(thisWeek) };
+}
+
+/* ───────────── Sezonlar ───────────── */
+
+export interface Season {
+  id: string;
+  name: string;
+  start: Date;
+  end: Date;
+}
+
+const SEASONS = [
+  { months: [2, 3, 4], name: "İlkbahar" },
+  { months: [5, 6, 7], name: "Yaz" },
+  { months: [8, 9, 10], name: "Sonbahar" },
+  { months: [11, 0, 1], name: "Kış" },
+] as const;
+
+/**
+ * Üç aylık sezonlar (İlkbahar, Yaz, Sonbahar, Kış). Sezon XP'si her sezon sıfırdan başlar;
+ * böylece yeni katılan oyuncu da sıralamada yukarı çıkma şansı bulur (Akış: ulaşılabilir hedef).
+ */
+export function seasonOf(date = new Date()): Season {
+  const local = new Date(date.getTime() + 3 * 3_600_000); // Türkiye saati (UTC+3)
+  const month = local.getUTCMonth();
+  const def = SEASONS.find((s) => (s.months as readonly number[]).includes(month))!;
+  const startYear = month < def.months[0] ? local.getUTCFullYear() - 1 : local.getUTCFullYear();
+  const start = new Date(Date.UTC(startYear, def.months[0], 1) - 3 * 3_600_000);
+  const end = new Date(Date.UTC(startYear, def.months[0] + 3, 1) - 3 * 3_600_000);
+  const label = def.name === "Kış" ? `${startYear}–${String(startYear + 1).slice(2)}` : String(startYear);
+  return { id: `${startYear}-${def.name}`, name: `${def.name} Sezonu ${label}`, start, end };
+}
+
+export function daysLeft(season: Season, now = new Date()): number {
+  return Math.max(0, Math.ceil((season.end.getTime() - now.getTime()) / DAY));
+}

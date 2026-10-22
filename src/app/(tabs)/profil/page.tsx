@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { BarChart3, CalendarCheck, ChevronRight, CircleCheck, Star, Trophy } from "lucide-react";
+import { BarChart3, CalendarCheck, CalendarRange, ChevronRight, CircleCheck, Flame, Hourglass, Star, Trophy } from "lucide-react";
 import { Avatar, SectionTitle } from "@/components/ui";
 import { RadarChart } from "@/components/RadarChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { requireViewer } from "@/lib/session";
 import { getProfile } from "@/lib/players";
-import { levelFromXp } from "@/lib/gamification";
+import { levelFromXp, XP_REWARDS } from "@/lib/gamification";
 import { evaluateBadges } from "@/lib/badges";
 import { BadgeGrid } from "@/components/BadgeGrid";
 
@@ -41,6 +41,15 @@ export default async function ProfilePage() {
             <p className="mt-1 text-xs text-muted">
               Seviye {level} • {current.toLocaleString("tr-TR")} / {needed.toLocaleString("tr-TR")} XP
             </p>
+            {profile.pendingMatches > 0 && (
+              <p
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-[11px] text-muted"
+                title="Maç XP'si, takım arkadaşlarının en az 3 oyuyla maça geldiğin onaylanınca eklenir."
+              >
+                <Hourglass size={12} /> {profile.pendingMatches} maçın onay bekliyor (+
+                {(profile.pendingMatches * XP_REWARDS.matchAttended).toLocaleString("tr-TR")} XP)
+              </p>
+            )}
           </section>
 
           <section className="relative mt-5 grid grid-cols-3 gap-3 text-center">
@@ -54,6 +63,33 @@ export default async function ProfilePage() {
               label="Güvenilirlik"
             />
             <Stat value={profile.mvpAwards} label="MVP Ödülü" />
+          </section>
+
+          <section className="relative mt-3 grid grid-cols-2 gap-3" aria-label="Seri ve sezon">
+            <div className="rounded-2xl border border-line bg-surface p-3">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted uppercase">
+                <Flame size={13} className="text-warning" /> Seri
+              </p>
+              <p className="mt-1 text-xl font-bold tabular-nums">
+                {profile.streak.current} <span className="text-sm font-semibold text-muted">hafta</span>
+              </p>
+              <p className="text-[11px] text-muted">
+                {profile.streak.playedThisWeek ? "Bu hafta oynadın" : "Bu hafta henüz maç yok"} · En iyi {profile.streak.best}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-line bg-surface p-3">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted uppercase">
+                <CalendarRange size={13} className="text-primary" /> Sezon
+              </p>
+              <p className="mt-1 text-xl font-bold tabular-nums">
+                {profile.season.xp.toLocaleString("tr-TR")} <span className="text-sm font-semibold text-muted">XP</span>
+              </p>
+              <p className="text-[11px] text-muted">
+                {profile.season.rank ? `${profile.season.rank}. sıra / ${profile.season.players}` : "Henüz sıralamada değilsin"} ·{" "}
+                {profile.season.daysLeft} gün kaldı
+              </p>
+            </div>
+            <p className="col-span-2 -mt-1 text-[11px] text-muted">{profile.season.name}: sezon XP&apos;si her sezon sıfırdan başlar.</p>
           </section>
 
           <Link

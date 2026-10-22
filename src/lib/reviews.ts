@@ -52,6 +52,13 @@ export type SubmitResult =
   | { ok: true; xp: number }
   | { ok: false; status: 400 | 403 | 404 | 409; error: string };
 
+/** İsteğe bağlı "Maçın Oyuncusu" oyu: { mvpId: "oguz" } ya da null */
+export function parseMvp(body: unknown): string | null | undefined {
+  const mvpId = (body as { mvpId?: unknown })?.mvpId;
+  if (mvpId === undefined || mvpId === null) return null;
+  return typeof mvpId === "string" ? mvpId : undefined; // undefined → geçersiz gövde
+}
+
 export function parseReviews(body: unknown): ReviewInput[] | null {
   const list = (body as { reviews?: unknown })?.reviews;
   if (!Array.isArray(list) || list.length === 0 || list.length > 30) return null;
@@ -66,7 +73,12 @@ export function parseReviews(body: unknown): ReviewInput[] | null {
   return parsed;
 }
 
-export async function submitReviews(matchId: string, reviewerId: string, reviews: ReviewInput[]): Promise<SubmitResult> {
+export async function submitReviews(
+  matchId: string,
+  reviewerId: string,
+  reviews: ReviewInput[],
+  mvpId: string | null = null,
+): Promise<SubmitResult> {
   const context = await getReviewContext(matchId, reviewerId);
   if (!context) return { ok: false, status: 404, error: "Maç bulunamadı." };
   if (context.state === "not_member") return { ok: false, status: 403, error: "Yalnızca bu maçın oyuncuları değerlendirme yapabilir." };
@@ -77,6 +89,10 @@ export async function submitReviews(matchId: string, reviewerId: string, reviews
   if (reviews.some((r) => !teammateIds.has(r.playerId)) || new Set(reviews.map((r) => r.playerId)).size !== reviews.length) {
     return { ok: false, status: 400, error: "Değerlendirme listesi bu maçın kadrosuyla uyuşmuyor." };
   }
+  // MVP yalnızca "Geldi" oyu verilen bir takım arkadaşı olabilir
+  if (mvpId && !reviews.some((r) => r.playerId === mvpId && r.attended)) {
+    return { ok: false, status: 400, error: "Maçın oyuncusu, maça gelen bir takım arkadaşı olmalı." };
+  }
 
   const db = await getDb();
   for (const r of reviews) {
@@ -86,8 +102,15 @@ export async function submitReviews(matchId: string, reviewerId: string, reviews
       [matchId, reviewerId, r.playerId, r.attended, r.praiseId],
     );
   }
+  if (mvpId) {
+    await db.query(
+      "INSERT INTO match_mvp_votes (match_id, voter_id, target_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+      [matchId, reviewerId, mvpId],
+    );
+  }
   const xp = reviews.length * XP_REWARDS.ratedOthers;
   await logEvent(reviewerId, "match_reviewed", matchId, {
+    mvp: mvpId,
     reviewed: reviews.length,
     praises: reviews.filter((r) => r.praiseId).length,
     absentVotes: reviews.filter((r) => !r.attended).length,
@@ -102,6 +125,10 @@ export interface Reputation {
   noShows: number;
   /** Gelme durumu kesinleşen (en az 3 oy) maçlar */
   decided: number;
+  /** Takım arkadaşlarının oylarıyla katılımı onaylanan maçlar (XP yalnızca bunlara verilir) */
+  confirmed: number;
+  /** Henüz yeterli oy almamış (onay bekleyen) maçlar */
+  pending: number;
   reliability: number;
   /** Değerlendirdiği maç sayısı ("Adil Oyuncu" başarımı) */
   ratingsGiven: number;
@@ -139,6 +166,8 @@ export async function getReputation(playerId: string): Promise<Reputation> {
     pastMatches: perMatch.length,
     noShows,
     decided,
+    confirmed: attended,
+    pending: perMatch.length - decided,
     reliability: reliabilityScore(decided, attended),
     ratingsGiven: given.matches,
     reviewsGiven: given.people,

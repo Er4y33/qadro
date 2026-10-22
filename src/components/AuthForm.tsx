@@ -121,6 +121,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         >
           <Sparkles size={16} className="text-primary" /> Demo hesabıyla dene
         </button>
+        <Link href="/demo" className="mt-3 text-center text-sm font-semibold text-primary">
+          Rehberli oyunlaştırma turunu başlat →
+        </Link>
 
         <p className="mt-auto pt-10 text-center text-sm text-muted">
           {isRegister ? "Zaten hesabın var mı? " : "Henüz hesabın yok mu? "}

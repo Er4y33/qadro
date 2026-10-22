@@ -2,10 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import { DesktopNav } from "./DesktopNav";
+import { DemoGuide } from "./DemoGuide";
 import { cn } from "./ui";
 
 /** Giriş yapmadan görülen sayfalar: kenar menü gösterilmez, kendi bölünmüş ekran düzenleri vardır */
-const PUBLIC_PREFIXES = ["/hosgeldin", "/giris", "/kayit"];
+const PUBLIC_PREFIXES = ["/hosgeldin", "/giris", "/kayit", "/demo"];
 
 /**
  * Uygulamanın dış çerçevesi (responsive).
@@ -30,6 +31,8 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
       >
         {children}
       </div>
+      {/* Rehberli demo turu açıksa her ekranda görünür (src/lib/demo-steps.ts) */}
+      <DemoGuide />
     </>
   );
 }

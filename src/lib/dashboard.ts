@@ -1,5 +1,6 @@
 import "server-only";
 import { getDb } from "./db";
+import { resolveAttendanceCounts, weeklyStreak } from "./gamification";
 import { SPORT_LABELS, type Sport } from "./types";
 
 /*
@@ -16,6 +17,9 @@ export const EVENT_LABELS: Record<string, string> = {
   match_joined: "Maça katılma",
   match_left: "Maçtan ayrılma",
   match_reviewed: "Maç değerlendirme",
+  sos_created: "S.O.S başlatma",
+  sos_answered: "S.O.S yanıtlama",
+  demo_started: "Demo turu",
 };
 
 export interface DashboardData {
@@ -101,5 +105,71 @@ export async function getDashboard(): Promise<DashboardData> {
       match: r.match,
       at: new Date(r.at).toISOString(),
     })),
+  };
+}
+
+/* ───────────── Oyunlaştırma ölçütleri (rota belgesi, 7. bölüm) ───────────── */
+
+export interface GamificationMetrics {
+  /** Gelme durumu kesinleşen katılımlarda "Gelmedi" oranı (%) */
+  noShowRate: number | null;
+  decidedAttendances: number;
+  pendingAttendances: number;
+  sos: { total: number; answered: number; avgResponseMinutes: number | null };
+  /** Oynanmış maçlarda, takım arkadaşlarını değerlendiren oyuncuların oranı (%) */
+  reviewParticipation: number | null;
+  mvpVotes: number;
+  /** En az 2 haftalık serisi süren oyuncular */
+  activeStreaks: number;
+}
+
+export async function getGamificationMetrics(): Promise<GamificationMetrics> {
+  const db = await getDb();
+
+  const attendance = await db.query<{ total: number; absent: number }>(
+    `SELECT count(r.target_id)::int AS total, count(*) FILTER (WHERE r.attended = false)::int AS absent
+     FROM match_participants mp
+     JOIN matches m ON m.id = mp.match_id AND m.starts_at < now()
+     LEFT JOIN match_reviews r ON r.match_id = mp.match_id AND r.target_id = mp.player_id
+     GROUP BY mp.match_id, mp.player_id`,
+  );
+  const decisions = attendance.map((a) => resolveAttendanceCounts(a.total, a.absent));
+  const decided = decisions.filter((d) => d !== null);
+  const noShows = decided.filter((d) => d === false).length;
+
+  const [sos] = await db.query<{ total: number; answered: number; avg_seconds: number | null }>(
+    `SELECT count(*)::int AS total, count(answered_by)::int AS answered,
+            avg(extract(epoch FROM answered_at - created_at))::float AS avg_seconds
+     FROM sos_calls`,
+  );
+
+  const [reviews] = await db.query<{ reviewers: number; members: number }>(
+    `SELECT
+       (SELECT count(*)::int FROM (SELECT DISTINCT match_id, reviewer_id FROM match_reviews) r)              AS reviewers,
+       (SELECT count(*)::int FROM match_participants mp JOIN matches m ON m.id = mp.match_id
+          WHERE m.starts_at < now())                                                                          AS members`,
+  );
+  const [mvp] = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM match_mvp_votes");
+
+  const played = await db.query<{ player_id: string; starts_at: Date }>(
+    `SELECT mp.player_id, m.starts_at FROM match_participants mp JOIN matches m ON m.id = mp.match_id
+     WHERE m.starts_at < now() AND m.starts_at > now() - interval '120 days'`,
+  );
+  const byPlayer = new Map<string, Date[]>();
+  for (const p of played) byPlayer.set(p.player_id, [...(byPlayer.get(p.player_id) ?? []), new Date(p.starts_at)]);
+  const activeStreaks = [...byPlayer.values()].filter((dates) => weeklyStreak(dates).current >= 2).length;
+
+  return {
+    noShowRate: decided.length ? Math.round((noShows / decided.length) * 100) : null,
+    decidedAttendances: decided.length,
+    pendingAttendances: decisions.length - decided.length,
+    sos: {
+      total: sos.total,
+      answered: sos.answered,
+      avgResponseMinutes: sos.avg_seconds === null ? null : Math.round(sos.avg_seconds / 6) / 10,
+    },
+    reviewParticipation: reviews.members ? Math.round((reviews.reviewers / reviews.members) * 100) : null,
+    mvpVotes: mvp.n,
+    activeStreaks,
   };
 }

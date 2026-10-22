@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, PartyPopper, X } from "lucide-react";
+import { Check, Crown, PartyPopper, X } from "lucide-react";
 import type { LineupSlot } from "@/lib/types";
 import { BADGES } from "@/lib/badges";
 import { XP_REWARDS } from "@/lib/gamification";
@@ -18,6 +18,8 @@ interface Review {
  * Maç sonu "Takımı Değerlendir" akışı.
  * Oyunlaştırma: Geldi/Gelmedi oyu güvenilirlik puanını besler (D6'daki 1 numaralı hedef),
  * övgüler sosyal tanınma sağlar, her değerlendirme "Adil Oyuncu" başarımına ilerletir.
+ * Son adımda "Maçın Oyuncusu" (MVP) seçilir: en az 2 oy alan ve tek başına önde olan oyuncu MVP olur
+ * (Hexad: Player tipi; "Maçın Yıldızı" başarımı).
  */
 export function TeamReview({
   matchId,
@@ -30,15 +32,18 @@ export function TeamReview({
 }) {
   const [index, setIndex] = useState(0);
   const [reviews, setReviews] = useState<Review[]>(() => teammates.map(() => ({ attended: null, praiseId: null })));
+  const [mvpId, setMvpId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   if (submitted) {
-    return <Summary matchId={matchId} reviews={reviews} ratingsGivenBefore={ratingsGivenBefore} />;
+    const mvp = teammates.find((t) => t.player.id === mvpId)?.player.name ?? null;
+    return <Summary matchId={matchId} reviews={reviews} ratingsGivenBefore={ratingsGivenBefore} mvpName={mvp} />;
   }
 
   const isLast = index === teammates.length - 1;
+  const onMvpStep = index === teammates.length;
 
   /** Son oyuncudan sonra tüm oylar tek istekte API'ye gönderilir */
   const submit = () =>
@@ -49,6 +54,7 @@ export function TeamReview({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reviews: reviews.map((r, i) => ({ playerId: teammates[i].player.id, attended: r.attended, praiseId: r.praiseId })),
+          mvpId,
         }),
       });
       // Not: router.refresh() burada çağrılmaz; sayfa sunucuda "zaten değerlendirdin" durumuna geçip özet ekranını silerdi.
@@ -58,6 +64,66 @@ export function TeamReview({
         setError(body.error ?? "Değerlendirme gönderilemedi.");
       }
     });
+
+  if (onMvpStep) {
+    const candidates = teammates.filter((_, i) => reviews[i].attended);
+    return (
+      <main className="flex flex-1 flex-col">
+        <header className="relative flex flex-col items-center px-4 pt-5 pb-3">
+          <h1 className="font-semibold">Maçın Oyuncusu</h1>
+          <p className="text-xs font-semibold text-primary">Son adım</p>
+        </header>
+        <section className="mx-5 mt-4 rounded-3xl border border-line bg-surface p-5">
+          <p className="flex items-center justify-center gap-2 text-center font-bold">
+            <Crown size={18} className="text-warning" /> Bu maçın yıldızı kimdi?
+          </p>
+          <p className="mt-1 text-center text-xs text-muted">
+            En az 2 oy alan ve tek başına önde olan oyuncu MVP seçilir. Kendini seçemezsin.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3" role="radiogroup" aria-label="Maçın oyuncusu">
+            {candidates.map((slot) => (
+              <button
+                key={slot.player.id}
+                type="button"
+                role="radio"
+                aria-checked={mvpId === slot.player.id}
+                onClick={() => setMvpId(mvpId === slot.player.id ? null : slot.player.id)}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border p-2.5 text-left text-sm font-semibold transition",
+                  mvpId === slot.player.id ? "border-warning bg-warning/15" : "border-line bg-surface-2",
+                )}
+              >
+                <Avatar player={slot.player} size={32} />
+                <span className="min-w-0 truncate">{slot.player.name}</span>
+              </button>
+            ))}
+          </div>
+          {candidates.length === 0 && <p className="mt-4 text-center text-sm text-muted">&quot;Geldi&quot; dediğin oyuncu yok.</p>}
+        </section>
+        <div className="mt-auto px-5 pt-6 pb-8">
+          {error && <p className="mb-2 text-center text-xs font-semibold text-danger">{error}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setIndex((i) => i - 1)}
+              className="rounded-xl border border-line px-4 font-semibold text-muted"
+            >
+              Geri
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={submit}
+              className="flex-1 rounded-xl bg-primary py-3.5 font-bold tracking-wide text-on-primary uppercase shadow-lg shadow-primary/30 transition disabled:opacity-40"
+            >
+              {pending ? "Gönderiliyor..." : mvpId ? "Değerlendirmeyi Bitir" : "MVP Seçmeden Bitir"}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const slot = teammates[index];
   const review = reviews[index];
@@ -160,10 +226,10 @@ export function TeamReview({
           <button
             type="button"
             disabled={review.attended === null || pending}
-            onClick={() => (isLast ? submit() : setIndex((i) => i + 1))}
+            onClick={() => setIndex((i) => i + 1)}
             className="flex-1 rounded-xl bg-primary py-3.5 font-bold tracking-wide text-on-primary uppercase shadow-lg shadow-primary/30 transition disabled:opacity-40 disabled:shadow-none"
           >
-            {isLast ? (pending ? "Gönderiliyor..." : "Değerlendirmeyi Bitir") : "Sonraki Oyuncu"}
+            {isLast ? "Maçın Oyuncusunu Seç" : "Sonraki Oyuncu"}
           </button>
         </div>
         {review.attended === null && (
@@ -174,7 +240,17 @@ export function TeamReview({
   );
 }
 
-function Summary({ matchId, reviews, ratingsGivenBefore }: { matchId: string; reviews: Review[]; ratingsGivenBefore: number }) {
+function Summary({
+  matchId,
+  reviews,
+  ratingsGivenBefore,
+  mvpName,
+}: {
+  matchId: string;
+  reviews: Review[];
+  ratingsGivenBefore: number;
+  mvpName: string | null;
+}) {
   const xp = reviews.length * XP_REWARDS.ratedOthers;
   const praiseCount = reviews.filter((r) => r.praiseId).length;
   const fairPlay = BADGES.find((b) => b.id === "adil-oyuncu")!;
@@ -191,6 +267,11 @@ function Summary({ matchId, reviews, ratingsGivenBefore }: { matchId: string; re
         {reviews.length} oyuncuyu değerlendirdin, {praiseCount} övgü verdin. &quot;Gelmedi&quot; oyları, en az 3 kişi oy
         verdiğinde ve çoğunluk sağlandığında güvenilirlik puanına yansır; tek bir oy kimseyi cezalandırmaz.
       </p>
+      {mvpName && (
+        <p className="mt-3 flex items-center gap-1.5 rounded-full bg-warning/15 px-3 py-1 text-xs font-semibold text-warning">
+          <Crown size={14} /> MVP oyun: {mvpName}
+        </p>
+      )}
 
       <div className="mt-6 w-full rounded-2xl border border-line bg-surface p-4 text-left">
         <p className="text-sm font-bold text-primary">+{xp} XP</p>

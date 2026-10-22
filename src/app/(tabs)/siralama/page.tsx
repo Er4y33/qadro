@@ -1,4 +1,5 @@
 import { LeaderboardView } from "@/components/LeaderboardView";
+import { SeasonStandings } from "@/components/SeasonStandings";
 import { currentUser } from "@/lib/mock-data";
 
 /*
@@ -12,6 +13,7 @@ export default function LeaderboardPage() {
   return (
     <div className="lg:mx-auto lg:max-w-2xl lg:pt-4">
       <LeaderboardView playerId={currentUser.id} />
+      <SeasonStandings playerId={currentUser.id} />
     </div>
   );
 }

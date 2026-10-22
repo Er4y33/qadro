@@ -4,7 +4,7 @@
 
 Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ortak dönem projesidir.
 
-🔗 **Canlı site:** [qadro-three.vercel.app](https://qadro-three.vercel.app/)
+🔗 **Canlı site:** [qadro-three.vercel.app](https://qadro-three.vercel.app/) · 🎓 **Oyunlaştırma demosu:** [qadro-three.vercel.app/demo](https://qadro-three.vercel.app/demo)
 
 ## Teknolojiler
 
@@ -49,9 +49,10 @@ Tarayıcıda `http://localhost:3000` adresini açın. Arayüz responsive: telefo
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
 | `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
 | `/mac/[id]/degerlendir` | Takımı Değerlendir (oylar veritabanına, güvenilirlik ve övgüler profile yansır) | SSR + CSR |
-| `/sos` | S.O.S çağrısı | SSR + CSR |
-| `/bildirimler` | Bildirimler | Statik (SSG) |
-| `/panel` | Kullanıcı davranışı dashboard'u (`user_events`) | **SSR** |
+| `/sos` | S.O.S çağrısı başlatma (veritabanına kaydedilir) | SSR + CSR |
+| `/bildirimler` | Bildirimler: açık S.O.S çağrıları veritabanından, kabul edince kadroya katılım | **SSR** |
+| `/panel` | Kullanıcı davranışı dashboard'u (`user_events`) ve oyunlaştırma ölçütleri | **SSR** |
+| `/demo` | Rehberli oyunlaştırma demo turu (8 adım, demo verisini sıfırlar) | SSR + rehber kartı istemcide |
 
 ## Klasör yapısı
 
@@ -73,7 +74,11 @@ src/
     ├── db/              # Veritabanı bağlantısı, şema ve örnek veri
     ├── matches.ts       # Maç sorguları (listele, oluştur, katıl, ayrıl)
     ├── mock-data.ts     # Saha kataloğu, profil ve sohbet örnekleri
-    └── gamification.ts  # XP, seviye ve güvenilirlik kuralları
+    ├── gamification.ts  # XP, seviye, güvenilirlik, MVP, haftalık seri ve sezon kuralları
+    ├── progress.ts      # Onaylı maçlar, MVP ödülleri, seri ve sezon sıralaması (veritabanı)
+    ├── sos.ts           # S.O.S çağrıları: başlat, listele, kabul et
+    ├── demo.ts          # Demo turu verisi (yalnızca "demo-" maçları)
+    └── demo-steps.ts    # Demo turunun adımları ve kuram notları
 ```
 
 ## Belgeler
@@ -91,6 +96,9 @@ Oyunlaştırma kuralları `src/lib/gamification.ts` dosyasındadır ve **D6 çer
 - **İş hedefi:** Maç dolma oranını artırmak, maça gelmeme (no-show) oranını düşürmek.
 - **Hedef davranışlar:** Maça gelmek, zamanında gelmek, maç sonu değerlendirme yapmak, S.O.S çağrısına yanıt vermek. Her biri XP kazandırır.
 - **Qadro Puanı (güvenilirlik):** Harcanabilir bir para birimi değil, itibar ölçüsüdür. Aşırı gerekçelendirme etkisinden kaçınmak için bilinçli olarak böyle tasarlandı.
+- **Sahte maç engeli:** Maç XP'si, katılım en az 3 takım arkadaşının oyuyla onaylandığında verilir.
+- **MVP, haftalık seri, sezonlar ve S.O.S** veritabanında çalışır; ayrıntılar ve kuramsal gerekçeler [rota belgesinde](docs/oyunlastirma-rotasi.md).
+- **Demo:** [`/demo`](https://qadro-three.vercel.app/demo) sayfasındaki rehberli tur, her ekrandaki mekaniği ve dayandığı kuramı gösterir.
 
 ## Tasarım
 
@@ -108,6 +116,8 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [x] Başarım (rozet) sistemi, Takımı Değerlendir, Şehrin En İyileri (ISR), S.O.S, Bildirimler
 - [x] Kullanıcı davranışı dashboard'u (`/panel`)
 - [x] 3 adımlı Maç Oluştur, Tenis branşı
+- [x] Gerçek S.O.S çağrıları, MVP oylaması, haftalık seri ve sezonlar, onaylı maç XP'si
+- [x] Panelde oyunlaştırma ölçütleri ve rehberli demo turu (`/demo`)
 - [x] Responsive masaüstü düzeni (kenar menü, iki kolonlu sayfalar, bölünmüş giriş ekranı)
 - [x] PWA bildirimi ve ikonlar (ana ekrana ekleme)
 - [ ] Çevrimdışı çalışma (service worker)

@@ -68,6 +68,8 @@ Motivasyon        →  Eylem            →  Geri bildirim
 
 **İlerleme döngüsü (progression loop):** Seviye → rozet → sezon sıralaması. Seviye eğrisi yükseldikçe yavaşlar (`xpForNextLevel`), böylece ilk seviyeler hızlı gelir ve yeni kullanıcı başarı hissini erken yaşar.
 
+**Haftalık seri ve sezonlar:** Oyuncunun üst üste maç oynadığı hafta sayısı profilde görünür (Hook modelindeki *yatırım*: emekle büyüyen bir değer). Sezonlar üç aylıktır (İlkbahar, Yaz, Sonbahar, Kış); sezon XP'si her sezon sıfırlanır, böylece yeni gelen oyuncu da sıralamada yukarı çıkabilir (Akış: ulaşılabilir hedef).
+
 ### 5. Don't forget the fun: Eğlenceyi unutma
 
 Qadro'nun asıl eğlencesi **sporun kendisidir**, uygulama bunu gölgelememelidir. Uygulama içindeki eğlence öğeleri:
@@ -104,10 +106,12 @@ Hunicke, LeBlanc ve Zubek'in **MDA** (Mekanik – Dinamik – Estetik) çerçeve
 | **2** | Güvenilirlik (Qadro Puanı) | Gelmek, zamanında gelmek | ÖBK: **ilişkisellik**, güven | ✅ Veritabanındaki oylardan hesaplanıyor (`src/lib/reviews.ts → getReputation`) |
 | **3** | Rozetler (8 adet) | Davranış çeşitliliği | Hexad, hedef belirleme | ✅ Kodda (`src/lib/badges.ts`, profil ekranı) |
 | **4** | Takımı Değerlendir: Geldi/Gelmedi + övgüler | Gelmek, değerlendirmek | ÖBK: ilişkisellik; Malone ve Lepper: **tanınma** | ✅ Çalışıyor: oylar `match_reviews` tablosuna kaydediliyor, övgüler profilde sayılarıyla görünüyor, "Adil Oyuncu" başarımı ilerliyor |
-| **5** | S.O.S (Joker) sistemi | Son dakika eksiğini kapatmak | Malone ve Lepper: **iş birliği** | ✅ Arayüz (`/sos`), bildirim gönderimi ⏳ |
+| **5** | S.O.S (Joker) sistemi | Son dakika eksiğini kapatmak | Malone ve Lepper: **iş birliği** | ✅ Çalışıyor: çağrı `sos_calls` tablosuna kaydediliyor, kadroda olmayan oyuncuların Bildirimler ekranına düşüyor, ilk kabul eden kadroya giriyor (+40 XP, Kurtarıcı) (`src/lib/sos.ts`) |
 | **6** | Şehrin En İyileri (ilçe bazlı sıralama) | Topluluk içi rekabet | Akış (Flow), ulaşılabilir zorluk | ✅ Arayüz (`/siralama`, ISR) |
-| **6b** | Haftalık oynama serisi ve sezonlar | Düzenli katılım | Hook modeli (alışkanlık) | ⏳ Planlandı |
-| **7** | Dashboard ile ölçüm | – | D6'nın 1. adımındaki ölçütler | ⏳ Planlandı (Web Programlama ile ortak) |
+| **6a** | Maçın Oyuncusu (MVP) oylaması | Takım arkadaşının performansını tanımak | Hexad: **Player**; Malone ve Lepper: tanınma | ✅ Değerlendirmenin son adımı; en az 2 oy ve tek başına önde olma kuralı (`resolveMvp`) |
+| **6b** | Haftalık oynama serisi ve sezonlar | Düzenli katılım | Hook modeli (alışkanlık), Akış | ✅ Profilde seri ve sezon kartı, `/siralama`'da canlı sezon tablosu (`weeklyStreak`, `seasonOf`, `src/lib/progress.ts`) |
+| **7** | Dashboard ile ölçüm | – | D6'nın 1. adımındaki ölçütler | ✅ `/panel` → Oyunlaştırma Ölçütleri: gelmeme oranı, S.O.S yanıt süresi, değerlendirme katılımı, MVP oyları, aktif seriler |
+| **8** | Rehberli demo turu | – | – | ✅ `/demo`: 8 adımlık tur, her ekranda mekanik ve kuram kartı |
 
 ---
 
@@ -161,21 +165,45 @@ Maç oluştururken seçilen **minimum seviye** de aynı amaca hizmet eder: "Ne �
 | Risk | Önlem |
 |---|---|
 | Bir kişi kötü niyetle "Gelmedi" der | En az 3 oy ve çoğunluk gerekir, eşitlikte oyuncu lehine karar verilir (`resolveAttendance`) ✅ |
-| Arkadaşlar birbirine sürekli 5 yıldız verir | Hep aynı puanı veren hesapların değerlendirme ağırlığı düşürülür *(planlanan)* |
-| Sahte maç açıp XP toplamak | XP yalnızca birden fazla oyuncunun onayladığı maçlarda verilir *(planlanan)* |
+| Arkadaşlar birbirini sürekli MVP seçer | MVP için en az 2 farklı oy ve tek başına önde olmak gerekir; eşitlikte kimse MVP olmaz (`resolveMvp`) ✅ |
+| Sahte maç açıp XP toplamak | Maç XP'si yalnızca katılımı en az 3 takım arkadaşının oyuyla onaylanan maçlarda verilir; onay bekleyen maçlar profilde ayrıca gösterilir (`getReputation → confirmed`) ✅ |
 | Yeni kullanıcının tek maçla puanı 0 ya da 5 olur | Güvenilirlik hesabında 5 maçlık nötr başlangıç (`reliabilityScore`) ✅ |
 | Rozet avcılığı, sporun önüne geçer | Rozetler az sayıda tutulur ve tamamen davranışa bağlıdır ✅ |
+| Seri kaybı korkusu (karanlık desen) | Seri yalnızca bilgilendirir: "serin yanıyor" gibi uyarı ya da bildirim yoktur; bu hafta oynanmadıysa seri bozulmuş sayılmaz ✅ |
+| Bir S.O.S çağrısını iki kişi aynı anda kabul eder | Çağrı tek SQL cümlesiyle sahiplenilir; kadroya eklenemezse sahiplik geri alınır (`answerSos`) ✅ |
 
 ---
 
 ## 7. Başarı Nasıl Ölçülecek?
 
-Oyunlaştırmanın işe yarayıp yaramadığı **yönetici dashboard'unda** izlenecek:
+Oyunlaştırmanın işe yarayıp yaramadığı `/panel` sayfasındaki **Oyunlaştırma Ölçütleri** bölümünde izlenir:
 
 - Oyunlaştırma öncesi ve sonrası **no-show oranı**
 - **S.O.S** yanıt süresi
 - Haftalık aktif kullanıcı
-- Rozet dağılımı: Hangi rozet çok kolay, hangisi kimse tarafından kazanılamıyor?
+- Maç sonu değerlendirme katılımı ve MVP oyları
+- 2+ haftalık serisi süren oyuncu sayısı
+- Rozet dağılımı: Hangi rozet çok kolay, hangisi kimse tarafından kazanılamıyor? *(planlanan)*
+
+---
+
+## 8. Rehberli Demo Turu
+
+Canlı sitedeki **`/demo`** sayfası, hocanın ve ekip arkadaşlarının kayıt olmadan tüm oyunlaştırma akışını denemesi içindir.
+
+- **Demoyu Başlat**, yalnızca kimliği `demo-` ile başlayan maçları şimdiki zamana göre yeniden kurar ve demo oyuncusu (Atahan) olarak giriş yapar (`src/lib/demo.ts`). Gerçek kullanıcıların verisine dokunulmaz.
+- Her ekranda sağ altta bir rehber kartı çıkar: **Dene** (ekranda yapılacak eylem), **Mekanik** ve **Kuram** (`src/lib/demo-steps.ts`).
+
+| Adım | Ekran | Gösterilen mekanik | Kuram |
+|---|---|---|---|
+| 1 | Ana sayfa | Doluluk, “Acil” etiketi | Deterding vd., D6 · Define |
+| 2 | Saha dizilimi | Mevki seçerek katılma | ÖBK · Özerklik, MDA |
+| 3 | Maç oluştur | Minimum seviye | Akış, Hexad · Socialiser |
+| 4 | Bildirimler | S.O.S çağrısını kabul etme | Malone ve Lepper · İş birliği, Hexad · Philanthropist, Hook · Tetikleyici |
+| 5 | Takımı Değerlendir | Geldi/Gelmedi, övgü, MVP | ÖBK · İlişkisellik, Tanınma, Hexad · Player |
+| 6 | Profil | XP, seri, sezon, rozetler | ÖBK · Yetkinlik, Hook · Yatırım, aşırı gerekçelendirme önlemi |
+| 7 | Şehrin En İyileri | İlçe ve sezon sıralaması | Akış, PBL eleştirisi |
+| 8 | Panel | Oyunlaştırma ölçütleri | D6 · Define ve Deploy |
 
 ---
 
