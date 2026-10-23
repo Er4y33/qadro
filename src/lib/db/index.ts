@@ -68,11 +68,16 @@ async function createDb(): Promise<Db> {
     const { default: postgres } = await import("postgres");
     const url = new URL(connectionString);
     const local = ["localhost", "127.0.0.1"].includes(url.hostname);
+    // Supabase havuzunun "transaction" modu (6543) yerine "session" modu (5432) kullanılır.
+    // 23 Ekim'de transaction modunda aynı anda giden sorgular "CONNECTION_DESTROYED" ile koptu;
+    // session modunda her bağlantı kendi sunucu oturumunu tutar, aynı anda giden sorgularla sorun yaşamaz.
+    // Fonksiyon başına tek bağlantı (max: 1) ve 10 sn boşta kapanma ile bağlantı sayısı küçük kalır.
+    if (url.hostname.endsWith("pooler.supabase.com") && url.port === "6543" && !process.env.DATABASE_URL) url.port = "5432";
     // Bağlantı adresindeki ek parametreler (sslmode, supa, pgbouncer…) postgres.js'te hata verebildiği için temizlenir.
     url.search = "";
     const sql = postgres(url.toString(), {
       ssl: local ? false : "require",
-      prepare: false, // Supabase'in "transaction pooler" bağlantısı hazır sorguları desteklemez
+      prepare: false, // Havuz modu değişirse de güvenli kalsın diye hazır (prepared) sorgu kullanılmaz
       max: 1, // Sunucusuz (serverless) ortamda her örnek tek bağlantı kullanır
       // Sunucusuz ortam için: 10 sn boşta kalan bağlantı kapanır, en fazla 5 dk yaşar.
       // Böylece fonksiyon uykudan uyandığında eski (ölmüş olabilecek) bir soket yerine yeni bağlantı açılır.
