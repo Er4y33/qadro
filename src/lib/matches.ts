@@ -1,6 +1,6 @@
 import "server-only";
 import { getDb } from "./db";
-import { getVenue } from "./mock-data";
+import { getVenue } from "./venues";
 import { capacityFor, isSport } from "./sports";
 import type { LineupSlot, Match, Player, Sport } from "./types";
 
@@ -21,6 +21,7 @@ interface MatchRow {
   capacity: number;
   min_level: number;
   is_public: boolean;
+  requires_approval: boolean;
   note: string;
   organizer_id: string;
 }
@@ -84,6 +85,7 @@ function toMatch(row: MatchRow, participants: ParticipantRow[], organizer: Playe
     dayLabel: dayLabel(startsAt),
     time: timeLabel(startsAt),
     isPublic: row.is_public,
+    requiresApproval: row.requires_approval,
     pricePerPerson: row.price,
     capacity: row.capacity,
     joined: participants.length,
@@ -152,6 +154,8 @@ export interface CreateMatchInput {
   price: number;
   minLevel: number;
   isPublic: boolean;
+  /** Açıksa katılmak isteyenler organizatörün onayını bekler */
+  requiresApproval: boolean;
   note: string;
 }
 
@@ -199,6 +203,7 @@ export function validateCreateMatch(body: unknown): { ok: true; value: CreateMat
       price,
       minLevel,
       isPublic: b.isPublic !== false,
+      requiresApproval: b.requiresApproval === true,
       note,
     },
   };
@@ -221,13 +226,27 @@ export async function createMatch(input: CreateMatchInput, organizerId: string):
   const id = slugify(input.title);
   const capacity = capacityFor(input.sport, input.format)!;
   await db.query(
-    `INSERT INTO matches (id, venue_id, title, sport, format, starts_at, price, capacity, min_level, is_public, note, organizer_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-    [id, input.venueId, input.title, input.sport, input.format, input.startsAt, input.price, capacity, input.minLevel, input.isPublic, input.note, organizerId],
+    `INSERT INTO matches (id, venue_id, title, sport, format, starts_at, price, capacity, min_level, is_public, requires_approval, note, organizer_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    [
+      id,
+      input.venueId,
+      input.title,
+      input.sport,
+      input.format,
+      input.startsAt,
+      input.price,
+      capacity,
+      input.minLevel,
+      input.isPublic,
+      input.requiresApproval,
+      input.note,
+      organizerId,
+    ],
   );
   // Organizatör maçın ilk oyuncusudur
   await db.query("INSERT INTO match_participants (match_id, player_id) VALUES ($1, $2)", [id, organizerId]);
-  await logEvent(organizerId, "match_created", id, { sport: input.sport, format: input.format, isPublic: input.isPublic });
+  await logEvent(organizerId, "match_created", id, { sport: input.sport, format: input.format, isPublic: input.isPublic, requiresApproval: input.requiresApproval });
   return id;
 }
 
@@ -239,28 +258,32 @@ export type JoinResult = "joined" | "not_found" | "full" | "already_joined";
  */
 export async function joinMatch(matchId: string, playerId: string, slot?: { position: string; x: number; y: number }): Promise<JoinResult> {
   const db = await getDb();
-  const inserted = await db.query(
-    `INSERT INTO match_participants (match_id, player_id, position, x, y)
-     SELECT m.id, $2, $3, $4, $5 FROM matches m
-     WHERE m.id = $1
-       AND (SELECT count(*) FROM match_participants WHERE match_id = m.id) < m.capacity
-     ON CONFLICT (match_id, player_id) DO NOTHING
-     RETURNING match_id`,
-    [matchId, playerId, slot?.position ?? null, slot?.x ?? null, slot?.y ?? null],
-  );
-  if (inserted.length > 0) {
-    await logEvent(playerId, "match_joined", matchId, slot ? { position: slot.position } : {});
+  /*
+   * Kontenjan kontrolü ve ekleme tek bir işlemde (transaction) yapılır.
+   * "SELECT … FOR UPDATE" maç satırını kilitler: aynı maça aynı anda gelen ikinci istek,
+   * birinci işlem bitene kadar bekler ve sonra güncel kayıt sayısını görür.
+   * Böylece iki kişi aynı anda son boş yere tıklasa bile kontenjan asla aşılmaz.
+   */
+  const result = await db.transaction<JoinResult>(async (tx) => {
+    const [match] = await tx.query<{ capacity: number }>("SELECT capacity FROM matches WHERE id = $1 FOR UPDATE", [matchId]);
+    if (!match) return "not_found";
+    const [state] = await tx.query<{ joined: number; member: boolean }>(
+      `SELECT count(*)::int AS joined, bool_or(player_id = $2) AS member FROM match_participants WHERE match_id = $1`,
+      [matchId, playerId],
+    );
+    if (state.member) return "already_joined";
+    if (state.joined >= match.capacity) return "full";
+    await tx.query("INSERT INTO match_participants (match_id, player_id, position, x, y) VALUES ($1, $2, $3, $4, $5)", [
+      matchId,
+      playerId,
+      slot?.position ?? null,
+      slot?.x ?? null,
+      slot?.y ?? null,
+    ]);
     return "joined";
-  }
-  // Neden eklenemediğini bul
-  const [state] = await db.query<{ exists: boolean; member: boolean }>(
-    `SELECT EXISTS (SELECT 1 FROM matches WHERE id = $1) AS exists,
-            EXISTS (SELECT 1 FROM match_participants WHERE match_id = $1 AND player_id = $2) AS member`,
-    [matchId, playerId],
-  );
-  if (!state.exists) return "not_found";
-  if (state.member) return "already_joined";
-  return "full";
+  });
+  if (result === "joined") await logEvent(playerId, "match_joined", matchId, slot ? { position: slot.position } : {});
+  return result;
 }
 
 export type LeaveResult = "left" | "not_found" | "not_member" | "organizer";

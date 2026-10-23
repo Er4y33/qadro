@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateBadges, type PlayerStats } from "@/lib/badges";
-import { leaderboard, nextGoal, rankBy } from "@/lib/leaderboard";
+import { nextGoal, rankBy, type LeaderboardEntry } from "@/lib/leaderboard";
 import { capacityFor, isSport } from "@/lib/sports";
 import { hashPassword, validateRegistration, verifyPassword } from "@/lib/auth";
 import { dayLabel, validateCreateMatch } from "@/lib/matches";
@@ -33,6 +33,13 @@ describe("Başarımlar", () => {
   });
 });
 
+/** Sıralama kurallarını sınamak için sabit örnek liste (gerçek veri src/lib/leaderboard-data.ts'ten gelir) */
+const leaderboard: LeaderboardEntry[] = [
+  ["ahmet", 4.9, 61, 18], ["burak", 4.8, 48, 9], ["eray", 4.8, 55, 14], ["mert", 4.7, 39, 7], ["caner", 4.6, 44, 6],
+  ["volkan", 4.6, 30, 5], ["oguz", 4.5, 52, 11], ["can", 4.5, 27, 4], ["selin", 4.4, 33, 8], ["kaan", 4.4, 29, 3],
+  ["deniz", 4.3, 24, 2], ["atahan", 4.2, 42, 12], ["yusuf", 4.1, 20, 1], ["emre", 4.0, 18, 2],
+].map(([id, rating, matches, mvp]) => ({ id: id as string, name: id as string, initials: "", color: "", rating: rating as number, matches: matches as number, mvp: mvp as number }));
+
 describe("Liderlik tablosu", () => {
   it("sıralama 1'den başlar ve kesintisizdir", () => {
     const ranked = rankBy(leaderboard, "rating");
@@ -41,8 +48,8 @@ describe("Liderlik tablosu", () => {
 
   it("eşit puanda daha çok maç oynayan öne geçer", () => {
     const ranked = rankBy(leaderboard, "rating");
-    const selin = ranked.find((e) => e.id === "selin")!; // 4.77, 33 maç
-    const kaan = ranked.find((e) => e.id === "kaan")!; // 4.77, 29 maç
+    const selin = ranked.find((e) => e.id === "selin")!; // 4.4, 33 maç
+    const kaan = ranked.find((e) => e.id === "kaan")!; // 4.4, 29 maç
     expect(selin.rank).toBeLessThan(kaan.rank);
   });
 

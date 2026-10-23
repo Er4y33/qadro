@@ -65,6 +65,62 @@ export function resolveAttendanceCounts(totalVotes: number, absentVotes: number)
   return absentVotes <= totalVotes / 2;
 }
 
+/**
+ * Zamanında gelme kararı: Maça geldiği kesinleşmiş (bkz. resolveAttendanceCounts) ve
+ * "Geç kaldı" oyları yarıyı geçmemişse zamanında gelmiş sayılır. Eşitlik oyuncu lehinedir.
+ * null: henüz karar yok (yeterli oy yok). false: gelmedi ya da geç kaldı.
+ */
+export function resolveOnTime(totalVotes: number, absentVotes: number, lateVotes: number): boolean | null {
+  const attended = resolveAttendanceCounts(totalVotes, absentVotes);
+  if (attended === null) return null;
+  return attended && lateVotes <= totalVotes / 2;
+}
+
+/**
+ * "Demir Adam" serisi: en yeni maçtan geriye doğru üst üste zamanında gelinen maç sayısı.
+ * Kararı henüz verilmemiş (null) maçlar seriyi bozmaz, atlanır.
+ */
+export function onTimeStreak(newestFirst: (boolean | null)[]): number {
+  let streak = 0;
+  for (const onTime of newestFirst) {
+    if (onTime === null) continue;
+    if (!onTime) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+/* ───────────── Oyuncu özellikleri (radar grafiği) ───────────── */
+
+export interface AttributeInput {
+  /** Övgü türüne göre alınan övgü sayıları */
+  praises: { label: string; count: number }[];
+  /** Takım arkadaşlarından alınan "Geldi" oyu sayısı */
+  attendedVotes: number;
+  /** Katılımı onaylanan maçlar ve bunların kaçına zamanında gelindiği */
+  confirmed: number;
+  onTime: number;
+  /** 0–5 güvenilirlik puanı */
+  reliability: number;
+}
+
+/**
+ * Radar grafiğindeki 0–100 arası değerler. Hepsi takım arkadaşlarının oylarından gelir; oyuncu kendini puanlayamaz.
+ * - Övgü eksenleri: "Geldi" oylarının yüzde kaçında bu övgü verildi.
+ * - Dakiklik: onaylanan maçların yüzde kaçına zamanında gelindi.
+ * - Güvenilirlik: 0–5 puanın yüzdelik karşılığı.
+ * Hiç oy alınmadıysa null (grafik yerine açıklama gösterilir).
+ */
+export function playerAttributes(input: AttributeInput): { label: string; value: number }[] | null {
+  if (input.attendedVotes === 0) return null;
+  const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
+  return [
+    ...input.praises.map((p) => ({ label: p.label, value: pct(p.count, input.attendedVotes) })),
+    { label: "Dakiklik", value: pct(input.onTime, input.confirmed) },
+    { label: "Güvenilirlik", value: Math.round(input.reliability * 20) },
+  ];
+}
+
 /* ───────────── Maçın Oyuncusu (MVP) ───────────── */
 
 /**

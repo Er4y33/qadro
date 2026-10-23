@@ -58,6 +58,7 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
   const [price, setPrice] = useState(120);
   const [minLevel, setMinLevel] = useState(5);
   const [isPublic, setIsPublic] = useState(true);
+  const [requiresApproval, setRequiresApproval] = useState(false);
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
       const res = await fetch("/api/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, sport, format, venueId, startsAt: toIso(date!, time!), price, minLevel, isPublic, note }),
+        body: JSON.stringify({ title, sport, format, venueId, startsAt: toIso(date!, time!), price, minLevel, isPublic, requiresApproval, note }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.status === 201) setCreatedId(body.id);
@@ -354,6 +355,20 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                   </button>
                 ))}
               </div>
+              <label className="mt-3 flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-line bg-surface p-3">
+                <span>
+                  <span className="block text-sm font-semibold">Katılımı ben onaylayayım</span>
+                  <span className="text-xs text-muted">
+                    &quot;Maça Katıl&quot; istek gönderir; güvenilirliklerine bakıp İstekleri Yönet ekranından onaylarsın.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={requiresApproval}
+                  onChange={(e) => setRequiresApproval(e.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0 accent-primary"
+                />
+              </label>
             </section>
 
             <textarea

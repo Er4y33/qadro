@@ -4,6 +4,7 @@ import { Avatar } from "@/components/ui";
 import { MatchFeed } from "@/components/MatchFeed";
 import { QadroMap } from "@/components/map/QadroMap";
 import { listMatches } from "@/lib/matches";
+import { listNotifications } from "@/lib/notifications";
 import { matchPins } from "@/lib/pins";
 import { requireViewer } from "@/lib/session";
 
@@ -12,7 +13,8 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const viewer = await requireViewer();
-  const matches = await listMatches(viewer.id);
+  const [matches, notifications] = await Promise.all([listMatches(viewer.id), listNotifications(viewer.id)]);
+  const unread = notifications.filter((n) => n.unread).length;
   const missingPlayers = matches.reduce((sum, m) => sum + Math.max(0, m.capacity - m.joined), 0);
 
   return (
@@ -27,18 +29,22 @@ export default async function HomePage() {
         </Link>
         <Link
           href="/bildirimler"
-          aria-label="Bildirimler (3 yeni)"
+          aria-label={unread ? `Bildirimler (${unread} yeni)` : "Bildirimler"}
           className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface"
         >
           <Bell size={18} />
-          <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-danger" />
+          {unread > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </Link>
       </header>
 
       {/* Geniş ekranda (xl) iki kolon: solda maçlar, sağda harita ve özet. Daha dar ekranlarda tek kolon. */}
       <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-8">
         <div>
-          <MatchFeed matches={matches} />
+          <MatchFeed matches={matches} viewerLevel={viewer.level} />
         </div>
 
         <aside className="hidden xl:block">

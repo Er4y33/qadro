@@ -1,3 +1,4 @@
+import { seedHistory } from "./seed-history";
 import type { Db } from "./index";
 
 /**
@@ -123,6 +124,81 @@ export async function seed(db: Db) {
   const [{ count }] = await db.query<{ count: number }>("SELECT count(*)::int AS count FROM players");
   if (count === 0) await seedInitial(db);
   await seedPastMatch(db);
+  await seedHistory(db);
+  await seedChat(db);
+  await seedApprovalDemo(db);
+  await keepDemoFresh(db);
+}
+
+const APPROVAL_MATCH_ID = "atahan-pazar-maci";
+
+/** Örnek maçların kimlikleri (kullanıcıların açtığı maçlara dokunulmaz) */
+const DEMO_MATCH_IDS = [...MATCHES.map((m) => m.id), APPROVAL_MATCH_ID];
+
+/**
+ * Demo hesabının (Atahan) organizatörü olduğu, onaylı katılımlı bir maç ve bekleyen 3 istek.
+ * Demo turunda "İstekleri Yönet" ekranı boş görünmesin; Onur'un düşük güvenilirliği karar vermeyi anlamlı kılar.
+ */
+export async function seedApprovalDemo(db: Db) {
+  const inserted = await db.query(
+    `INSERT INTO matches (id, venue_id, title, sport, format, starts_at, price, capacity, min_level, is_public, requires_approval, organizer_id, note)
+     VALUES ($1, 'kmaras-merkez', 'Atahan''ın Pazar Maçı', 'futbol', '6v6', $2, 100, 12, 1, true, true, 'atahan',
+             'Düzenli gelen oyuncu arıyorum, istekleri güvenilirliğe göre onaylıyorum.')
+     ON CONFLICT (id) DO NOTHING RETURNING id`,
+    [APPROVAL_MATCH_ID, inDays(4, "18:00")],
+  );
+  if (inserted.length === 0) return;
+  for (const p of ["atahan", "mert", "kerem", "serkan", "hakan", "baris"]) {
+    await db.query("INSERT INTO match_participants (match_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [APPROVAL_MATCH_ID, p]);
+  }
+  const requests: [string, string | null, number | null, number | null, number][] = [
+    ["furkan", "OS", 50, 50, 50],
+    ["onur", "Snt", 50, 15, 35],
+    ["enes", null, null, null, 12],
+  ];
+  for (const [player, position, x, y, minutesAgo] of requests) {
+    await db.query(
+      `INSERT INTO join_requests (match_id, player_id, position, x, y, created_at)
+       VALUES ($1, $2, $3, $4, $5, now() - make_interval(mins => $6)) ON CONFLICT DO NOTHING`,
+      [APPROVAL_MATCH_ID, player, position, x, y, minutesAgo],
+    );
+  }
+}
+
+/**
+ * Örnek maçlar seed anına göre "yarın", "3 gün sonra" gibi tarihlerle eklenir; birkaç gün sonra hepsi geçmişte kalır
+ * ve canlı sitede ana sayfa boşalır. Başlama saati geçmiş örnek maçlar tam hafta sayısı kadar ileri alınır:
+ * gün ve saat aynı kalır (cuma 21:00 yine cuma 21:00), maç yeniden "yaklaşan" olur.
+ */
+async function keepDemoFresh(db: Db) {
+  await db.query(
+    `UPDATE matches
+     SET starts_at = starts_at + ceil(extract(epoch FROM now() - starts_at) / 604800) * interval '7 days'
+     WHERE id = ANY($1) AND starts_at < now() - interval '3 hours'`,
+    [DEMO_MATCH_IDS],
+  );
+}
+
+/** Cuma maçının takım sohbetine örnek mesajlar (sohbet boşsa bir kez) */
+async function seedChat(db: Db) {
+  const id = "cuma-aksami-hali-saha";
+  const [{ n }] = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM messages WHERE match_id = $1", [id]);
+  const [exists] = await db.query("SELECT 1 FROM matches WHERE id = $1", [id]);
+  if (n > 0 || !exists) return;
+  const lines: [string, string, number][] = [
+    ["ahmet", "Beyler IBAN'ı bırakıyorum, kişi başı ₺120.", 47],
+    ["ahmet", "TR12 0006 2000 0000 1234 5678 90", 46],
+    ["mert", "Ben parayı gönderdim. Eldiven getiren var mı, kaleye geçecek biri lazım.", 40],
+    ["burak", "Bende yedek eldiven var, getiririm.", 22],
+  ];
+  for (const [sender, body, minutesAgo] of lines) {
+    await db.query("INSERT INTO messages (match_id, sender_id, body, created_at) VALUES ($1, $2, $3, now() - make_interval(mins => $4))", [
+      id,
+      sender,
+      body,
+      minutesAgo,
+    ]);
+  }
 }
 
 async function seedInitial(db: Db) {

@@ -1,5 +1,5 @@
 /**
- * Yerel liderlik tablosu: "Şehrin En İyileri"
+ * Yerel liderlik tablosu: "Şehrin En İyileri" (sıralama kuralları; veri src/lib/leaderboard-data.ts'ten gelir)
  *
  * Tasarım kararı (docs/oyunlastirma-rotasi.md, Akış bölümü):
  * Küresel tablo yerine ilçe bazlı tablo kullanılır. Oyuncu her zaman kendi sırasını
@@ -10,7 +10,7 @@
 export type LeaderboardMetric = "rating" | "matches" | "mvp";
 
 export const METRIC_LABELS: Record<LeaderboardMetric, string> = {
-  rating: "Genel Puan",
+  rating: "Güvenilirlik",
   matches: "Maç Sayısı",
   mvp: "MVP Ödülleri",
 };
@@ -25,25 +25,8 @@ export interface LeaderboardEntry {
   mvp: number;
 }
 
-export const DISTRICT = "Onikişubat";
-
-/** Örnek veri. Supabase bağlanınca ilçe bazlı sorgudan gelecek. */
-export const leaderboard: LeaderboardEntry[] = [
-  { id: "ahmet", name: "Ahmet Erdem", initials: "AE", color: "bg-warning", rating: 4.95, matches: 61, mvp: 18 },
-  { id: "burak", name: "Burak", initials: "BU", color: "bg-slate-500", rating: 4.91, matches: 48, mvp: 9 },
-  { id: "eray", name: "Eray", initials: "ER", color: "bg-info", rating: 4.88, matches: 55, mvp: 14 },
-  { id: "mert", name: "Mert Boz", initials: "MB", color: "bg-violet", rating: 4.85, matches: 39, mvp: 7 },
-  { id: "caner", name: "Caner K.", initials: "CN", color: "bg-slate-500", rating: 4.82, matches: 44, mvp: 6 },
-  { id: "volkan", name: "Volkan", initials: "VL", color: "bg-danger", rating: 4.8, matches: 30, mvp: 5 },
-  { id: "oguz", name: "Oğuz", initials: "OS", color: "bg-warning", rating: 4.79, matches: 52, mvp: 11 },
-  { id: "can", name: "Can", initials: "CY", color: "bg-info", rating: 4.78, matches: 27, mvp: 4 },
-  { id: "selin", name: "Selin", initials: "SE", color: "bg-violet", rating: 4.77, matches: 33, mvp: 8 },
-  { id: "kaan", name: "Kaan", initials: "KA", color: "bg-danger", rating: 4.77, matches: 29, mvp: 3 },
-  { id: "deniz", name: "Deniz", initials: "DE", color: "bg-info", rating: 4.76, matches: 24, mvp: 2 },
-  { id: "atahan", name: "Atahan", initials: "AT", color: "bg-primary", rating: 4.75, matches: 42, mvp: 12 },
-  { id: "yusuf", name: "Yusuf", initials: "YU", color: "bg-slate-500", rating: 4.7, matches: 20, mvp: 1 },
-  { id: "emre", name: "Emre", initials: "EM", color: "bg-warning", rating: 4.62, matches: 18, mvp: 2 },
-];
+/** Sıralamanın kapsadığı şehir (sahalar şimdilik yalnızca Kahramanmaraş'ta) */
+export const CITY = "Kahramanmaraş";
 
 export interface RankedEntry extends LeaderboardEntry {
   rank: number;

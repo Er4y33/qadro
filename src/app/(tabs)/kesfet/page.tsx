@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { QadroMap } from "@/components/map/QadroMap";
-import { getVenue } from "@/lib/mock-data";
+import { getVenue } from "@/lib/venues";
 import { listMatches } from "@/lib/matches";
 import { matchPins } from "@/lib/pins";
 import { requireViewer } from "@/lib/session";

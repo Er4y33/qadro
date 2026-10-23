@@ -1,5 +1,7 @@
 import "server-only";
 import { getDb } from "./db";
+import { seedApprovalDemo } from "./db/seed";
+import { syncLevels } from "./progress";
 
 /*
  * Rehberli demo turu için örnek veri.
@@ -12,6 +14,7 @@ import { getDb } from "./db";
  * - Son 3 haftanın maçları: katılımı oylarla onaylı → haftalık seri ve sezon XP'si dolu görünür.
  * - "demo-son-mac": 4 saat önce oynanmış (ana sayfa akışında görünmez), Atahan henüz değerlendirmemiş → Takımı Değerlendir + MVP.
  * - "demo-sos-mac": 3 saat sonra başlayacak, 1 kişi eksik, açık S.O.S çağrısı → Bildirimler'den kabul edilir.
+ * - "atahan-pazar-maci": Atahan'ın organizatörü olduğu onaylı katılımlı maç ve 3 bekleyen istek → İstekleri Yönet.
  */
 
 export const DEMO_PLAYER_ID = "atahan";
@@ -31,7 +34,8 @@ const SEVEN: Lineup = [
 
 export async function resetDemo(now = new Date()) {
   const db = await getDb();
-  await db.query("DELETE FROM matches WHERE id LIKE 'demo-%'");
+  await db.query("DELETE FROM matches WHERE id LIKE 'demo-%' OR id = 'atahan-pazar-maci'");
+  await seedApprovalDemo(db);
 
   const insertMatch = async (m: {
     id: string;
@@ -134,4 +138,5 @@ export async function resetDemo(now = new Date()) {
     "INSERT INTO sos_calls (match_id, position, created_by, created_at, expires_at) VALUES ($1, 'Kaleci', 'mert', $2, $3)",
     [sos, new Date(now.getTime() - 4 * 60_000).toISOString(), startsAt.toISOString()],
   );
+  await syncLevels();
 }

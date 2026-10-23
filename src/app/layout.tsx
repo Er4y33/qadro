@@ -2,7 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppFrame } from "@/components/AppFrame";
 
+/** Paylaşım görsellerinin tam adresi için: Vercel'de canlı alan adı, yerelde localhost */
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Qadro | Eksik Oyuncu Derdine Son",
   description:
     "Çevrendeki halı saha, basketbol ve voleybol maçlarını bul, takımını kur, sahaya in.",

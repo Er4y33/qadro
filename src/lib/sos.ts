@@ -3,7 +3,7 @@ import { getDb } from "./db";
 import { XP_REWARDS } from "./gamification";
 import { getMatch, joinMatch, logEvent } from "./matches";
 import { POSITIONS } from "./sports";
-import { getVenue } from "./mock-data";
+import { getVenue } from "./venues";
 import type { Sport } from "./types";
 
 /*
@@ -134,4 +134,16 @@ export async function answerSos(callId: string, playerId: string): Promise<Answe
   const responseSeconds = Math.round((Date.now() - new Date(claimed.created_at).getTime()) / 1000);
   await logEvent(playerId, "sos_answered", claimed.match_id, { callId: Number(callId), responseSeconds });
   return { ok: true, matchId: claimed.match_id, xp: XP_REWARDS.sosAnswered };
+}
+
+/** Çağrının ulaşacağı oyuncu sayısı: maçın kadrosunda olmayan herkes (listOpenSos ile aynı kural) */
+export async function countSosRecipients(matchId: string): Promise<number> {
+  const db = await getDb();
+  const [row] = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM players p, matches m
+     WHERE m.id = $1
+       AND NOT EXISTS (SELECT 1 FROM match_participants mp WHERE mp.match_id = m.id AND mp.player_id = p.id)`,
+    [matchId],
+  );
+  return row?.n ?? 0;
 }

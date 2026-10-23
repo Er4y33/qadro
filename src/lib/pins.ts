@@ -1,5 +1,5 @@
 import type { MapPin } from "@/components/map/LeafletMap";
-import { getVenue } from "./mock-data";
+import { getVenue } from "./venues";
 import type { Match } from "./types";
 
 /** Maç listesinden harita iğneleri (Keşfet ve masaüstü ana sayfa ortak kullanır) */

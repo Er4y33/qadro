@@ -1,7 +1,7 @@
 /**
  * Veritabanı şeması. Uygulama ilk açıldığında çalışır; tablolar zaten varsa bir şey yapmaz.
  *
- * Tesis (saha) kataloğu bilinçli olarak kodda tutulur (src/lib/mock-data.ts → venues):
+ * Tesis (saha) kataloğu bilinçli olarak kodda tutulur (src/lib/venues.ts):
  * nadiren değişen referans veridir ve /saha/[id] sayfaları build anında (SSG) üretilir.
  * Değişen veriler (oyuncular, maçlar, katılımlar, olaylar) veritabanındadır.
  *
@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS match_reviews (
   CHECK (attended OR praise_id IS NULL)
 );
 CREATE INDEX IF NOT EXISTS match_reviews_target_idx ON match_reviews (target_id);
+-- "Geç kaldı" oyu: çoğunluk geç kaldı derse o maç "zamanında gelme" XP'si ve serisi sayılmaz.
+ALTER TABLE match_reviews ADD COLUMN IF NOT EXISTS late boolean NOT NULL DEFAULT false;
 
 -- Maçın Oyuncusu (MVP) oyları: her oyuncu bir maçta en fazla bir takım arkadaşını seçer.
 CREATE TABLE IF NOT EXISTS match_mvp_votes (
@@ -108,6 +110,50 @@ CREATE TABLE IF NOT EXISTS sos_calls (
 );
 CREATE INDEX IF NOT EXISTS sos_calls_open_idx ON sos_calls (expires_at) WHERE answered_by IS NULL;
 
+-- Bildirimler ekranında "Tümünü okundu işaretle": bu andan önceki bildirimler okunmuş sayılır
+ALTER TABLE players ADD COLUMN IF NOT EXISTS notifications_seen_at timestamptz;
+
+-- Onaylı katılım: organizatör bu seçeneği açtıysa "Maça Katıl" doğrudan kadroya eklemez, istek oluşturur.
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS requires_approval boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS join_requests (
+  match_id    text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  player_id   text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  status      text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'declined')),
+  position    text,
+  x           double precision,
+  y           double precision,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  decided_at  timestamptz,
+  PRIMARY KEY (match_id, player_id)
+);
+
+-- Takım sohbeti: her maçın kadrosu için bir grup sohbeti. Mesaj okuma için kadroda olmak gerekir (src/lib/chat.ts).
+CREATE TABLE IF NOT EXISTS messages (
+  id          bigserial PRIMARY KEY,
+  match_id    text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  sender_id   text NOT NULL REFERENCES players(id),
+  body        text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 500),
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS messages_match_idx ON messages (match_id, id);
+
+-- Okunmamış mesaj sayısı için: oyuncunun her sohbette en son gördüğü mesaj
+CREATE TABLE IF NOT EXISTS chat_reads (
+  match_id      text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  player_id     text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  last_read_id  bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (match_id, player_id)
+);
+
+-- Başarısız giriş denemeleri: kaba kuvvetle şifre denemeyi yavaşlatmak için (src/lib/auth.ts → loginBlocked)
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id          bigserial PRIMARY KEY,
+  email       text NOT NULL,
+  ip          text NOT NULL DEFAULT '',
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS login_attempts_email_idx ON login_attempts (email, created_at);
+
 CREATE INDEX IF NOT EXISTS matches_starts_at_idx ON matches (starts_at);
 CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at);
 
@@ -122,4 +168,8 @@ ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_mvp_votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sos_calls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE login_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE join_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_reads ENABLE ROW LEVEL SECURITY;
 `;

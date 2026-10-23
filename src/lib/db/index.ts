@@ -13,9 +13,18 @@ import { seed } from "./seed";
  */
 export type Row = Record<string, unknown>;
 
-interface Db {
+/** İşlem (transaction) içinde kullanılan bağlantı: yalnızca sorgu çalıştırır */
+interface Tx {
   query<T = Row>(text: string, params?: unknown[]): Promise<T[]>;
+}
+
+interface Db extends Tx {
   exec(text: string): Promise<void>;
+  /**
+   * Verilen fonksiyonu tek bir işlem (BEGIN … COMMIT) içinde çalıştırır.
+   * Fonksiyon hata fırlatırsa her şey geri alınır (ROLLBACK): ya hepsi kaydedilir ya hiçbiri.
+   */
+  transaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T>;
   kind: "postgres" | "pglite";
 }
 
@@ -49,6 +58,10 @@ async function createDb(): Promise<Db> {
       exec: async (text) => {
         await sql.unsafe(text);
       },
+      transaction: async (fn) =>
+        (await sql.begin((tx) =>
+          fn({ query: async <T,>(text: string, params: unknown[] = []) => (await tx.unsafe(text, params as never[])) as unknown as T[] }),
+        )) as Awaited<ReturnType<typeof fn>>,
     };
   }
 
@@ -61,6 +74,7 @@ async function createDb(): Promise<Db> {
     exec: async (text) => {
       await pg.exec(text);
     },
+    transaction: (fn) => pg.transaction((tx) => fn({ query: async <T,>(text: string, params: unknown[] = []) => (await tx.query<T>(text, params)).rows })),
   };
 }
 
@@ -82,4 +96,4 @@ export function getDb(): Promise<Db> {
   return globalForDb.qadroDb;
 }
 
-export type { Db };
+export type { Db, Tx };

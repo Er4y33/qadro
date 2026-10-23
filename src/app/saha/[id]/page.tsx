@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Navigation, Share } from "lucide-react";
 import { QadroMap } from "@/components/map/QadroMap";
-import { getVenue, venues } from "@/lib/mock-data";
+import { getVenue, venues } from "@/lib/venues";
 
 /*
  * Render stratejisi: SSG. Tesis bilgileri nadiren değişir,

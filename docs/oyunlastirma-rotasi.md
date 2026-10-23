@@ -107,11 +107,14 @@ Hunicke, LeBlanc ve Zubek'in **MDA** (Mekanik – Dinamik – Estetik) çerçeve
 | **3** | Rozetler (8 adet) | Davranış çeşitliliği | Hexad, hedef belirleme | ✅ Kodda (`src/lib/badges.ts`, profil ekranı) |
 | **4** | Takımı Değerlendir: Geldi/Gelmedi + övgüler | Gelmek, değerlendirmek | ÖBK: ilişkisellik; Malone ve Lepper: **tanınma** | ✅ Çalışıyor: oylar `match_reviews` tablosuna kaydediliyor, övgüler profilde sayılarıyla görünüyor, "Adil Oyuncu" başarımı ilerliyor |
 | **5** | S.O.S (Joker) sistemi | Son dakika eksiğini kapatmak | Malone ve Lepper: **iş birliği** | ✅ Çalışıyor: çağrı `sos_calls` tablosuna kaydediliyor, kadroda olmayan oyuncuların Bildirimler ekranına düşüyor, ilk kabul eden kadroya giriyor (+40 XP, Kurtarıcı) (`src/lib/sos.ts`) |
-| **6** | Şehrin En İyileri (ilçe bazlı sıralama) | Topluluk içi rekabet | Akış (Flow), ulaşılabilir zorluk | ✅ Arayüz (`/siralama`, ISR) |
+| **2a** | Zamanında gelme (+15 XP) ve "Demir Adam" serisi | Zamanında gelmek | ÖBK: yetkinlik | ✅ Değerlendirmede "Geç kaldı" oyu; çoğunluk geç kaldı demezse zamanında sayılır (`resolveOnTime`, `onTimeStreak`) |
+| **6** | Şehrin En İyileri (şehir sıralaması) | Topluluk içi rekabet | Akış (Flow), ulaşılabilir zorluk | ✅ Takım arkadaşlarının oylarından hesaplanıyor (`src/lib/leaderboard-data.ts`, `/siralama`, ISR) |
+| **6c** | Onaylı katılım ("İstekleri Yönet") | Gelmeyen oyuncu riskini azaltmak | D6 hedef davranışı; Hexad: Disruptor'ı sınırlama | ✅ Organizatör istekleri güvenilirlik ve gelmediği maç sayısına bakarak onaylar (`src/lib/requests.ts`) |
+| **6d** | Oyuncu özellikleri (radar) ve "Başarını Paylaş" | Tanınma, sosyal kanıt | Malone ve Lepper: tanınma; Hook: yatırım | ✅ Radar değerleri oylardan (`playerAttributes`), herkese açık profil ve paylaşım görseli (`/oyuncu/[id]`) |
 | **6a** | Maçın Oyuncusu (MVP) oylaması | Takım arkadaşının performansını tanımak | Hexad: **Player**; Malone ve Lepper: tanınma | ✅ Değerlendirmenin son adımı; en az 2 oy ve tek başına önde olma kuralı (`resolveMvp`) |
 | **6b** | Haftalık oynama serisi ve sezonlar | Düzenli katılım | Hook modeli (alışkanlık), Akış | ✅ Profilde seri ve sezon kartı, `/siralama`'da canlı sezon tablosu (`weeklyStreak`, `seasonOf`, `src/lib/progress.ts`) |
 | **7** | Dashboard ile ölçüm | – | D6'nın 1. adımındaki ölçütler | ✅ `/panel` → Oyunlaştırma Ölçütleri: gelmeme oranı, S.O.S yanıt süresi, değerlendirme katılımı, MVP oyları, aktif seriler |
-| **8** | Rehberli demo turu | – | – | ✅ `/demo`: 8 adımlık tur, her ekranda mekanik ve kuram kartı |
+| **8** | Rehberli demo turu | – | – | ✅ `/demo`: 9 adımlık tur, her ekranda mekanik ve kuram kartı |
 
 ---
 
@@ -171,6 +174,8 @@ Maç oluştururken seçilen **minimum seviye** de aynı amaca hizmet eder: "Ne �
 | Rozet avcılığı, sporun önüne geçer | Rozetler az sayıda tutulur ve tamamen davranışa bağlıdır ✅ |
 | Seri kaybı korkusu (karanlık desen) | Seri yalnızca bilgilendirir: "serin yanıyor" gibi uyarı ya da bildirim yoktur; bu hafta oynanmadıysa seri bozulmuş sayılmaz ✅ |
 | Bir S.O.S çağrısını iki kişi aynı anda kabul eder | Çağrı tek SQL cümlesiyle sahiplenilir; kadroya eklenemezse sahiplik geri alınır (`answerSos`) ✅ |
+| Sık gelmeyen oyuncu kadroları bozmaya devam eder | Onaylı katılımda organizatör güvenilirliği ve gelmediği maç sayısını görür; reddedilen oyuncu aynı maça tekrar istek atamaz ✅ |
+| Oyuncu kendi özelliklerini şişirir | Radar grafiğindeki her değer takım arkadaşlarının oylarından gelir; kendini puanlamak mümkün değildir ✅ |
 
 ---
 
@@ -191,7 +196,7 @@ Oyunlaştırmanın işe yarayıp yaramadığı `/panel` sayfasındaki **Oyunlaş
 
 Canlı sitedeki **`/demo`** sayfası, hocanın ve ekip arkadaşlarının kayıt olmadan tüm oyunlaştırma akışını denemesi içindir.
 
-- **Demoyu Başlat**, yalnızca kimliği `demo-` ile başlayan maçları şimdiki zamana göre yeniden kurar ve demo oyuncusu (Atahan) olarak giriş yapar (`src/lib/demo.ts`). Gerçek kullanıcıların verisine dokunulmaz.
+- **Demoyu Başlat**, yalnızca kimliği `demo-` ile başlayan maçları ve Atahan'ın onaylı katılımlı maçını şimdiki zamana göre yeniden kurar ve demo oyuncusu (Atahan) olarak giriş yapar (`src/lib/demo.ts`). Gerçek kullanıcıların verisine dokunulmaz.
 - Her ekranda sağ altta bir rehber kartı çıkar: **Dene** (ekranda yapılacak eylem), **Mekanik** ve **Kuram** (`src/lib/demo-steps.ts`).
 
 | Adım | Ekran | Gösterilen mekanik | Kuram |
@@ -200,10 +205,11 @@ Canlı sitedeki **`/demo`** sayfası, hocanın ve ekip arkadaşlarının kayıt 
 | 2 | Saha dizilimi | Mevki seçerek katılma | ÖBK · Özerklik, MDA |
 | 3 | Maç oluştur | Minimum seviye | Akış, Hexad · Socialiser |
 | 4 | Bildirimler | S.O.S çağrısını kabul etme | Malone ve Lepper · İş birliği, Hexad · Philanthropist, Hook · Tetikleyici |
-| 5 | Takımı Değerlendir | Geldi/Gelmedi, övgü, MVP | ÖBK · İlişkisellik, Tanınma, Hexad · Player |
-| 6 | Profil | XP, seri, sezon, rozetler | ÖBK · Yetkinlik, Hook · Yatırım, aşırı gerekçelendirme önlemi |
-| 7 | Şehrin En İyileri | İlçe ve sezon sıralaması | Akış, PBL eleştirisi |
-| 8 | Panel | Oyunlaştırma ölçütleri | D6 · Define ve Deploy |
+| 5 | İstekleri Yönet | Güvenilirliğe bakarak istek onaylama | D6 · Hedef davranış, Hexad · Disruptor |
+| 6 | Takımı Değerlendir | Geldi/Gelmedi, geç kaldı, övgü, MVP | ÖBK · İlişkisellik, Tanınma, Hexad · Player |
+| 7 | Profil | XP, seri, sezon, rozetler, radar, Başarını Paylaş | ÖBK · Yetkinlik, Hook · Yatırım, aşırı gerekçelendirme önlemi |
+| 8 | Şehrin En İyileri | Şehir ve sezon sıralaması | Akış, PBL eleştirisi |
+| 9 | Panel | Oyunlaştırma ölçütleri | D6 · Define ve Deploy |
 
 ---
 

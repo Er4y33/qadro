@@ -59,6 +59,8 @@ export interface Match {
   dayLabel: string;
   time: string;
   isPublic: boolean;
+  /** Katılım organizatör onayına bağlı mı ("İstekleri Yönet") */
+  requiresApproval: boolean;
   pricePerPerson: number;
   capacity: number;
   joined: number;
@@ -69,23 +71,4 @@ export interface Match {
   participants: Player[];
   lineup: LineupSlot[];
   note: string;
-}
-
-export interface ChatPreview {
-  id: string;
-  title: string;
-  format: string;
-  lastSender: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  tone: "success" | "primary" | "violet";
-}
-
-export interface ChatMessage {
-  id: string;
-  sender: Player | "me";
-  text?: string;
-  iban?: { number: string; holder: string };
-  time: string;
 }

@@ -5,11 +5,9 @@ import type { Sport } from "@/lib/types";
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
-import { DISTRICT } from "@/lib/leaderboard";
+import { CITY } from "@/lib/leaderboard";
 import { cn } from "./ui";
 
-/** Bildirimin gideceği uygun oyuncu sayısı. Konum ve seviyeye göre hesaplama ileride eklenecek; şimdilik temsilî. */
-const NEARBY_PLAYERS = 24;
 
 /**
  * S.O.S (Joker) çağrısı: Maça kısa süre kala eksik kalan kadroyu tamamlamak için
@@ -17,7 +15,18 @@ const NEARBY_PLAYERS = 24;
  * Çağrı POST /api/sos ile veritabanına kaydedilir ve kadroda olmayan oyuncuların Bildirimler ekranına düşer.
  * Oyunlaştırma: Çağrıya yanıt veren oyuncu "Kurtarıcı" başarımına ilerler (Philanthropist tipi).
  */
-export function SosCall({ matchId, matchTitle, sport }: { matchId: string; matchTitle: string; sport: Sport }) {
+export function SosCall({
+  matchId,
+  matchTitle,
+  sport,
+  eligible,
+}: {
+  matchId: string;
+  matchTitle: string;
+  sport: Sport;
+  /** Çağrıyı görecek oyuncu sayısı: kadroda olmayan herkes */
+  eligible: number;
+}) {
   const positions = POSITIONS[sport];
   const [position, setPosition] = useState(positions[0]);
   const [sent, setSent] = useState(false);
@@ -81,8 +90,8 @@ export function SosCall({ matchId, matchTitle, sport }: { matchId: string; match
       <h1 className="mt-8 text-center text-2xl font-bold">{sent ? "Sinyal Gönderildi!" : "Acil Adam Lazım!"}</h1>
       <p className="mt-2 text-center text-sm text-muted">
         {sent
-          ? `${DISTRICT} çevresindeki oyunculara ${position.toLocaleLowerCase("tr-TR")} çağrısı ulaştı. İlk kabul eden kadroya eklenir.`
-          : `${DISTRICT} çevresindeki ${NEARBY_PLAYERS} uygun oyuncuya yüksek öncelikli radar bildirimi gidecek.`}
+          ? `${CITY} çevresindeki oyunculara ${position.toLocaleLowerCase("tr-TR")} çağrısı ulaştı. İlk kabul eden kadroya eklenir.`
+          : `${CITY} çevresindeki ${eligible} uygun oyuncuya yüksek öncelikli radar bildirimi gidecek.`}
       </p>
 
       <h2 className="mt-8 mb-3 text-sm font-bold">İhtiyaç Duyulan Mevki</h2>

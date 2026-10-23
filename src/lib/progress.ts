@@ -1,6 +1,6 @@
 import "server-only";
 import { getDb } from "./db";
-import { resolveAttendanceCounts, resolveMvp, seasonOf, weeklyStreak, XP_REWARDS, type Season, type Streak } from "./gamification";
+import { levelFromXp, reliabilityScore, resolveAttendanceCounts, resolveMvp, resolveOnTime, seasonOf, weeklyStreak, XP_REWARDS, type Season, type Streak } from "./gamification";
 
 /*
  * Oyuncu ilerlemesi: onaylanan maçlar, MVP ödülleri, S.O.S yanıtları, haftalık seri ve sezon XP'si.
@@ -39,7 +39,7 @@ export async function getPlayedMatches(playerId: string, range?: { from: Date; t
 }
 
 /** Maç başına MVP kararları (yalnızca bir MVP'si olan maçlar) */
-async function getMvpWinners(range?: { from: Date; to: Date }): Promise<{ matchId: string; playerId: string }[]> {
+export async function getMvpWinners(range?: { from: Date; to: Date }): Promise<{ matchId: string; playerId: string }[]> {
   const db = await getDb();
   const rows = await db.query<{ match_id: string; target_id: string; n: number }>(
     `SELECT v.match_id, v.target_id, count(*)::int AS n
@@ -93,11 +93,43 @@ export interface SeasonStandings {
  */
 export async function getSeasonStandings(now = new Date()): Promise<SeasonStandings> {
   const season = seasonOf(now);
-  const range = { from: season.start, to: season.end };
+  return { season, entries: await xpTable({ from: season.start, to: season.end }) };
+}
+
+/** Tüm zamanların XP'si (profildeki toplam XP ile aynı kural) */
+export const allTimeXp = () => xpTable({ from: new Date("2000-01-01T00:00:00Z"), to: new Date("2100-01-01T00:00:00Z") });
+
+/**
+ * players tablosundaki seviye ve puan sütunlarını oylardan hesaplanan değerlerle eşitler.
+ * Maç kartları ve kadro listeleri bu sütunları okur ("Lvl. 3 • 4.6 Yıldız", "Seviyeme uygun" filtresi);
+ * her sayfada yeniden hesaplamak yerine burada güncellenir. Sıralama sayfası her yeniden üretildiğinde
+ * (ISR, en fazla 5 dakikada bir), demo sıfırlanınca ve profil açılınca çalışır.
+ */
+export async function syncLevels() {
+  const db = await getDb();
+  const xp = new Map((await allTimeXp()).map((e) => [e.playerId, e.xp]));
+  const votes = await db.query<{ player_id: string; total: number; absent: number }>(
+    `SELECT mp.player_id, count(r.target_id)::int AS total, count(*) FILTER (WHERE r.attended = false)::int AS absent
+     FROM match_participants mp
+     JOIN matches m ON m.id = mp.match_id AND m.starts_at < now()
+     LEFT JOIN match_reviews r ON r.match_id = mp.match_id AND r.target_id = mp.player_id
+     GROUP BY mp.player_id, mp.match_id`,
+  );
+  const players = await db.query<{ id: string; level: number; rating: number }>("SELECT id, level, rating FROM players");
+  for (const p of players) {
+    const decisions = votes.filter((v) => v.player_id === p.id).map((v) => resolveAttendanceCounts(v.total, v.absent));
+    const rating = reliabilityScore(decisions.filter((d) => d !== null).length, decisions.filter((d) => d === true).length);
+    const level = levelFromXp(xp.get(p.id) ?? 0).level;
+    if (level !== p.level || rating !== p.rating) await db.query("UPDATE players SET level = $2, rating = $3 WHERE id = $1", [p.id, level, rating]);
+  }
+}
+
+async function xpTable(range: { from: Date; to: Date }): Promise<SeasonEntry[]> {
   const db = await getDb();
 
-  const attendance = await db.query<{ player_id: string; total: number; absent: number }>(
-    `SELECT mp.player_id, count(r.target_id)::int AS total, count(*) FILTER (WHERE r.attended = false)::int AS absent
+  const attendance = await db.query<{ player_id: string; total: number; absent: number; late: number }>(
+    `SELECT mp.player_id, count(r.target_id)::int AS total, count(*) FILTER (WHERE r.attended = false)::int AS absent,
+            count(*) FILTER (WHERE r.late)::int AS late
      FROM match_participants mp
      JOIN matches m ON m.id = mp.match_id AND m.starts_at < now() AND m.starts_at >= $1 AND m.starts_at < $2
      LEFT JOIN match_reviews r ON r.match_id = mp.match_id AND r.target_id = mp.player_id
@@ -119,15 +151,17 @@ export async function getSeasonStandings(now = new Date()): Promise<SeasonStandi
 
   const xp = new Map<string, number>();
   const add = (id: string, amount: number) => xp.set(id, (xp.get(id) ?? 0) + amount);
-  for (const a of attendance) if (resolveAttendanceCounts(a.total, a.absent) === true) add(a.player_id, XP_REWARDS.matchAttended);
+  for (const a of attendance) {
+    if (resolveAttendanceCounts(a.total, a.absent) === true) add(a.player_id, XP_REWARDS.matchAttended);
+    if (resolveOnTime(a.total, a.absent, a.late) === true) add(a.player_id, XP_REWARDS.onTime);
+  }
   for (const r of reviews) add(r.player_id, r.n * XP_REWARDS.ratedOthers);
   for (const s of sos) add(s.player_id, s.n * XP_REWARDS.sosAnswered);
   for (const m of mvps) add(m.playerId, XP_REWARDS.mvp);
 
-  const entries = players
+  return players
     .map((p) => ({ playerId: p.id, name: p.name, initials: p.initials, color: p.color, xp: xp.get(p.id) ?? 0 }))
     .filter((e) => e.xp > 0)
     .sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name, "tr"))
     .map((e, i) => ({ ...e, rank: i + 1 }));
-  return { season, entries };
 }

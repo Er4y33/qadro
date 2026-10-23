@@ -19,7 +19,8 @@ Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ort
 | Harita | Leaflet + OpenStreetMap (ücretsiz, API anahtarı gerekmez) |
 | Yayın | Vercel |
 | Veritabanı | PostgreSQL: yerelde gömülü **PGlite**, canlıda **Supabase** |
-| API | Next.js Route Handlers ile REST (`/api/matches`) |
+| API | Next.js Route Handlers ile REST (`/api/...`) |
+| Testler | Vitest + GitHub Actions |
 
 ## Kurulum
 
@@ -40,12 +41,12 @@ Tarayıcıda `http://localhost:3000` adresini açın. Arayüz responsive: telefo
 npm test
 ```
 
-57 otomatik test, iki grupta (`tests/` klasörü):
+81 otomatik test (`tests/` klasörü):
 
 | Dosya | Ne test ediliyor |
 |---|---|
-| `gamification.test.ts`, `rules.test.ts` | Oyun kuralları: seviye/XP, güvenilirlik, çoğunluk oyu, MVP, haftalık seri, sezonlar, başarımlar, liderlik tablosu, form doğrulama, şifre özetleme |
-| `database.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan dolunca katılamama, organizatörün ayrılamaması, değerlendirme yetkisi (403/409), S.O.S çağrısını yalnızca bir kişinin kabul edebilmesi |
+| `gamification.test.ts`, `rules.test.ts`, `filters.test.ts` | Oyun kuralları: seviye/XP, güvenilirlik, çoğunluk oyu, zamanında gelme ve Demir Adam serisi, MVP, haftalık seri, sezonlar, radar değerleri, başarımlar, liderlik tablosu, maç filtreleri (Türkiye saatiyle), form doğrulama, şifre özetleme |
+| `database.test.ts`, `features.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan, değerlendirme yetkisi (403/409), S.O.S, işlem (transaction) geri alma, takım sohbeti yetkisi ve okunmamış sayısı, onaylı katılım (istek, onay, ret, kadrodan çıkarma), giriş deneme sınırı (429), hesap silme, oylardan şehir sıralaması |
 
 GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i otomatik çalıştırır (`.github/workflows/ci.yml`). Yukarıdaki rozet son durumu gösterir.
 
@@ -55,21 +56,26 @@ GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i 
 |---|---|---|
 | `/hosgeldin` | Tanıtım (3 adım) | Statik (SSG) |
 | `/giris`, `/kayit` | Giriş ve kayıt ("Sahaya Adım At!") | Statik (SSG) + form istemcide |
-| `/` | Ana sayfa, spor filtresi, maç listesi (veritabanından) | **SSR** + istemcide filtre (CSR) |
-| `/mac/[id]` | Maç detayı, katıl / ayrıl | **SSR**: kontenjan her istekte veritabanından |
+| `/` | Ana sayfa: branş seçimi, **Filtreler** (tarih, ücret, boş yer, seviye), maç listesi, okunmamış bildirim sayısı | **SSR** + filtreler istemcide (CSR) |
+| `/mac/[id]` | Maç detayı: katıl / ayrıl / katılma isteği gönder, paylaş | **SSR**: kontenjan her istekte veritabanından |
 | `/mac/[id]/dizilim` | Saha dizilimi, bölge seçerek katılma | SSR + CSR |
-| `/mac/olustur` | 3 adımlı maç oluşturma (branş/format → zaman/saha → kurallar/onay) | Sunucu bileşeni + CSR form |
-| `/sohbetler` | Takım sohbetleri | Statik (SSG) |
-| `/sohbetler/[id]` | Sohbet odası | SSR |
-| `/profil` | Oyuncu kartı (gerçek istatistikler), başarımlar, çıkış | SSR |
+| `/mac/[id]/istekler` | **İstekleri Yönet** ve **Onaylanan Kadro** (organizatöre özel) | **SSR** + CSR |
+| `/mac/olustur` | 3 adımlı maç oluşturma (branş/format → zaman/saha → kurallar, onaylı katılım) | Sunucu bileşeni + CSR form |
+| `/sohbetler` | Takım grupları (okunmamış mesaj sayısıyla) ve birlikte oynanan kişiler | **SSR** + arama istemcide |
+| `/sohbetler/[id]` | Takım sohbeti: kadroya özel, 4 saniyede bir yeni mesaj sorgusu, IBAN kartı | SSR + CSR |
+| `/profil` | Kendi profilin: XP, seviye, güvenilirlik, seri, sezon, övgüler, başarımlar, oylardan radar grafiği, son maçlar, **Başarını Paylaş** | **SSR** |
+| `/oyuncu/[id]` | Herkese açık oyuncu profili (**Qadro Profilin**), paylaşım önizleme görseli (`opengraph-image`) | **SSR**, giriş gerektirmez |
+| `/ayarlar` | **Ayarlar**: ad, şifre değiştirme, tema, çıkış, hesabı silme | **SSR** + CSR |
 | `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSR + harita istemcide (CSR) |
 | `/saha/[id]` | Saha Konumu, yol tarifi | **SSG**: `generateStaticParams` ile her tesis build anında üretilir |
-| `/siralama` | Şehrin En İyileri (ilçe sıralaması) | **ISR**: 5 dakikada bir arka planda yenilenir |
-| `/mac/[id]/degerlendir` | Takımı Değerlendir (oylar veritabanına, güvenilirlik ve övgüler profile yansır) | SSR + CSR |
-| `/sos` | S.O.S çağrısı başlatma (veritabanına kaydedilir) | SSR + CSR |
-| `/bildirimler` | Bildirimler: açık S.O.S çağrıları veritabanından, kabul edince kadroya katılım | **SSR** |
+| `/siralama` | Şehrin En İyileri (takım arkadaşlarının oylarından) ve sezon tablosu | **ISR**: 5 dakikada bir arka planda yenilenir |
+| `/mac/[id]/degerlendir` | Takımı Değerlendir: Geldi/Gelmedi, geç kaldı, övgü, MVP | SSR + CSR |
+| `/sos` | S.O.S çağrısı başlatma | SSR + CSR |
+| `/bildirimler` | S.O.S çağrıları, katılma istekleri ve sonuçları, okunmamış mesajlar, değerlendirme hatırlatması, övgüler, MVP | **SSR** |
 | `/panel` | Kullanıcı davranışı dashboard'u (`user_events`) ve oyunlaştırma ölçütleri | **SSR** |
-| `/demo` | Rehberli oyunlaştırma demo turu (8 adım, demo verisini sıfırlar) | SSR + rehber kartı istemcide |
+| `/demo` | Rehberli oyunlaştırma demo turu (9 adım, demo verisini sıfırlar) | SSR + rehber kartı istemcide |
+
+Uygulamadaki tüm sayılar veritabanından hesaplanır. Kodda tutulan tek veri saha kataloğudur (`src/lib/venues.ts`): sahalar nadiren değişir ve sayfaları build anında üretilir. Boş bir veritabanında ekranlar anlamlı görünsün diye ilk açılışta örnek oyuncular, son 8 haftanın maçları ve oyları eklenir (`src/lib/db/seed*.ts`); sayılar bu oylardan, uygulamanın kendi kurallarıyla hesaplanır.
 
 ## Klasör yapısı
 
@@ -90,7 +96,13 @@ src/
     ├── types.ts         # Veri tipleri
     ├── db/              # Veritabanı bağlantısı, şema ve örnek veri
     ├── matches.ts       # Maç sorguları (listele, oluştur, katıl, ayrıl)
-    ├── mock-data.ts     # Saha kataloğu, profil ve sohbet örnekleri
+    ├── requests.ts      # Onaylı katılım: istek, onay/ret, kadrodan çıkarma
+    ├── chat.ts          # Takım sohbeti: mesajlar, okunmamış sayısı, kişiler
+    ├── notifications.ts # Bildirimler (veritabanındaki olaylardan üretilir)
+    ├── filters.ts       # Ana sayfa maç filtreleri (saf fonksiyon)
+    ├── players.ts       # Profil verisi (kendi profilin ve herkese açık profil)
+    ├── leaderboard*.ts  # Şehrin En İyileri: sıralama kuralları ve veritabanı sorgusu
+    ├── venues.ts        # Saha kataloğu (kodda tutulan tek veri)
     ├── gamification.ts  # XP, seviye, güvenilirlik, MVP, haftalık seri ve sezon kuralları
     ├── progress.ts      # Onaylı maçlar, MVP ödülleri, seri ve sezon sıralaması (veritabanı)
     ├── sos.ts           # S.O.S çağrıları: başlat, listele, kabul et
@@ -119,7 +131,7 @@ Oyunlaştırma kuralları `src/lib/gamification.ts` dosyasındadır ve **D6 çer
 
 ## Tasarım
 
-Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıldı. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
+Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıldı. Ayarlar, Filtreler, İstekleri Yönet, Onaylanan Kadro, Başarını Paylaş ve oyuncu profili ekranları, Figma tasarımları gelmeden mevcut tasarım diliyle (aynı renkler ve bileşenler) yapıldı; tasarımlar gelince görünümleri güncellenecek. Renkler `src/app/globals.css` içinde CSS değişkeni olarak tanımlı; tema değiştirmek için yalnızca bu dosyayı güncellemek yeterli.
 
 ## Yol haritası
 
@@ -137,7 +149,12 @@ Arayüz, Melih Atahan Akgün'ün Figma tasarımlarından birebir koda aktarıld�
 - [x] Panelde oyunlaştırma ölçütleri ve rehberli demo turu (`/demo`)
 - [x] Responsive masaüstü düzeni (kenar menü, iki kolonlu sayfalar, bölünmüş giriş ekranı)
 - [x] PWA bildirimi ve ikonlar (ana ekrana ekleme)
+- [x] Gerçek takım sohbeti, gerçek bildirimler, oylardan şehir sıralaması ve radar grafiği
+- [x] Onaylı katılım (İstekleri Yönet, Onaylanan Kadro), Filtreler, Ayarlar, herkese açık profil ve Başarını Paylaş
+- [x] Sağlamlık: işlem (transaction) ve satır kilidiyle kontenjan, giriş deneme sınırı (429), zamanında gelme XP'si
 - [ ] Çevrimdışı çalışma (service worker)
+- [ ] Gerçek zamanlı sohbet (şimdilik 4 saniyede bir yeni mesaj sorgusu)
+- [ ] Anlık bildirim (Web Push)
 
 ## Ekip
 

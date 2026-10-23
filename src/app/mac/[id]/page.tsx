@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Lock, MessageSquare, Plus, Share2 } from "lucide-react";
+import { Lock, MessageSquare, Plus, UserCheck } from "lucide-react";
 import { Avatar, ScreenHeader, cn } from "@/components/ui";
 import { MatchActions } from "@/components/MatchActions";
+import { ShareButton } from "@/components/ShareButton";
+import { getRequestStatus, listRequests } from "@/lib/requests";
 import { QadroMap } from "@/components/map/QadroMap";
-import { getVenue } from "@/lib/mock-data";
+import { getVenue } from "@/lib/venues";
 import { getMatch } from "@/lib/matches";
 import { requireViewer } from "@/lib/session";
 import { SPORT_LABELS } from "@/lib/types";
@@ -25,17 +27,26 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   const joined = match.participants.some((p) => p.id === viewer.id);
   const isOrganizer = match.organizer.id === viewer.id;
   const openSlots = match.capacity - match.joined;
+  const [requestStatus, requests] = await Promise.all([
+    joined ? null : getRequestStatus(match.id, viewer.id),
+    isOrganizer ? listRequests(match.id, viewer.id) : null,
+  ]);
+  const pendingRequests = requests?.ok ? requests.requests.length : 0;
 
   return (
     <>
-      <main className="flex-1 pb-32 lg:mx-auto lg:w-full lg:max-w-5xl lg:px-6 lg:pb-12">
+      <main className={cn("flex-1 lg:mx-auto lg:w-full lg:max-w-5xl lg:px-6 lg:pb-12", isOrganizer ? "pb-52" : "pb-36")}>
         <ScreenHeader
           title="Maç Detayı"
           backHref="/"
           right={
-            <button type="button" aria-label="Paylaş" className="flex h-10 w-10 items-center justify-center text-muted">
-              <Share2 size={20} />
-            </button>
+            <ShareButton
+              variant="icon"
+              title={`${match.title} · Qadro`}
+              text={`${match.title}: ${match.dayLabel} ${match.time}, ${match.venueShort}. ${Math.max(0, openSlots)} kişi eksik, gel!`}
+              path={`/mac/${match.id}`}
+              label="Maçı paylaş"
+            />
           }
         />
 
@@ -66,6 +77,11 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               {match.title}
               {!match.isPublic && <Lock size={18} className="text-muted" aria-label="Gizli maç" />}
             </h1>
+            {match.requiresApproval && (
+              <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-info/15 px-2 py-0.5 text-xs font-semibold text-info">
+                <UserCheck size={13} /> Onaylı katılım: organizatör istekleri onaylıyor
+              </p>
+            )}
 
             <div className="mt-4 grid grid-cols-[1fr_1.25fr_0.8fr] gap-2">
               <InfoTile label={match.dayLabel} value={match.time} />
@@ -153,6 +169,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               joined={joined}
               isOrganizer={isOrganizer}
               full={openSlots <= 0}
+              requiresApproval={match.requiresApproval}
+              requestStatus={requestStatus}
+              pendingRequests={pendingRequests}
             />
           </div>
         </div>

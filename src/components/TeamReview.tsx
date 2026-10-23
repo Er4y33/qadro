@@ -11,6 +11,7 @@ import { Avatar, ProgressBar, cn } from "./ui";
 
 interface Review {
   attended: boolean | null;
+  late: boolean;
   praiseId: string | null;
 }
 
@@ -31,7 +32,7 @@ export function TeamReview({
   ratingsGivenBefore: number;
 }) {
   const [index, setIndex] = useState(0);
-  const [reviews, setReviews] = useState<Review[]>(() => teammates.map(() => ({ attended: null, praiseId: null })));
+  const [reviews, setReviews] = useState<Review[]>(() => teammates.map(() => ({ attended: null, late: false, praiseId: null })));
   const [mvpId, setMvpId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export function TeamReview({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          reviews: reviews.map((r, i) => ({ playerId: teammates[i].player.id, attended: r.attended, praiseId: r.praiseId })),
+          reviews: reviews.map((r, i) => ({ playerId: teammates[i].player.id, attended: r.attended, late: r.late, praiseId: r.praiseId })),
           mvpId,
         }),
       });
@@ -162,7 +163,7 @@ export function TeamReview({
             type="button"
             role="radio"
             aria-checked={review.attended === false}
-            onClick={() => update({ attended: false, praiseId: null })}
+            onClick={() => update({ attended: false, late: false, praiseId: null })}
             className={cn(
               "flex items-center justify-center gap-1.5 rounded-xl border py-3 font-semibold transition",
               review.attended === false ? "border-danger bg-danger/15 text-danger" : "border-line bg-surface-2 text-fg",
@@ -183,6 +184,17 @@ export function TeamReview({
             <Check size={18} /> Geldi
           </button>
         </div>
+        {review.attended === true && (
+          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={review.late}
+              onChange={(e) => update({ late: e.target.checked })}
+              className="h-4 w-4 accent-warning"
+            />
+            Geç kaldı
+          </label>
+        )}
 
         <hr className="my-5 border-dashed border-line" />
 

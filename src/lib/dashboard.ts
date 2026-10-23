@@ -20,6 +20,12 @@ export const EVENT_LABELS: Record<string, string> = {
   sos_created: "S.O.S başlatma",
   sos_answered: "S.O.S yanıtlama",
   demo_started: "Demo turu",
+  message_sent: "Sohbet mesajı",
+  join_requested: "Katılma isteği",
+  request_approved: "İstek onayı",
+  achievement_shared: "Başarı paylaşımı",
+  account_deleted: "Hesap silme",
+  participant_removed: "Kadrodan çıkarma",
 };
 
 export interface DashboardData {

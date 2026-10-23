@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, UserCheck } from "lucide-react";
 import type { Match } from "@/lib/types";
 import { ProgressBar, cn } from "./ui";
 
@@ -23,6 +23,11 @@ export function MatchCard({ match }: { match: Match }) {
       >
         {urgent ? "Acil" : "Yeni"}
       </span>
+      {match.requiresApproval && (
+        <span className="ml-2 inline-flex items-center gap-1 rounded-md bg-info/15 px-2 py-0.5 text-[11px] font-semibold text-info">
+          <UserCheck size={12} /> Onaylı katılım
+        </span>
+      )}
 
       <h3 className="mt-2 font-bold">
         {match.title} ({match.format})

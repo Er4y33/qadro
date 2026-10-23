@@ -10,6 +10,9 @@ import {
   weekKey,
   weeklyStreak,
   xpForNextLevel,
+  onTimeStreak,
+  playerAttributes,
+  resolveOnTime,
 } from "@/lib/gamification";
 
 describe("Seviye ve XP", () => {
@@ -131,5 +134,45 @@ describe("Sezonlar", () => {
     const season = seasonOf(new Date("2026-10-21T12:00:00+03:00"));
     expect(daysLeft(season, new Date("2026-10-21T12:00:00+03:00"))).toBe(41);
     expect(daysLeft(season, new Date("2027-05-01T00:00:00+03:00"))).toBe(0);
+  });
+});
+
+describe("Zamanında gelme ve Demir Adam serisi", () => {
+  it("geldiği onaylanan ve çoğunluk 'geç kaldı' demeyen oyuncu zamanında sayılır", () => {
+    expect(resolveOnTime(4, 0, 1)).toBe(true);
+    expect(resolveOnTime(4, 0, 2)).toBe(true); // eşitlik oyuncu lehine
+    expect(resolveOnTime(4, 0, 3)).toBe(false);
+  });
+
+  it("oy yetersizse karar yok, gelmediyse zamanında da sayılmaz", () => {
+    expect(resolveOnTime(2, 0, 0)).toBeNull();
+    expect(resolveOnTime(3, 3, 0)).toBe(false);
+  });
+
+  it("seri en yeni maçtan geriye sayılır, kararsız maçlar seriyi bozmaz", () => {
+    expect(onTimeStreak([true, null, true, false, true])).toBe(2);
+    expect(onTimeStreak([false, true, true])).toBe(0);
+    expect(onTimeStreak([])).toBe(0);
+  });
+});
+
+describe("Oyuncu özellikleri (radar)", () => {
+  const praises = [
+    { label: "Centilmen", count: 3 },
+    { label: "Dinamik", count: 0 },
+    { label: "Kaya Gibi", count: 1 },
+    { label: "Taktiksel", count: 6 },
+  ];
+
+  it("hiç oy almayan oyuncunun grafiği yoktur", () => {
+    expect(playerAttributes({ praises, attendedVotes: 0, confirmed: 0, onTime: 0, reliability: 4 })).toBeNull();
+  });
+
+  it("değerler 0–100 arası yüzdedir ve oylardan hesaplanır", () => {
+    const attrs = playerAttributes({ praises, attendedVotes: 12, confirmed: 4, onTime: 3, reliability: 4.5 })!;
+    expect(attrs.find((a) => a.label === "Taktiksel")?.value).toBe(50); // 6 / 12
+    expect(attrs.find((a) => a.label === "Dakiklik")?.value).toBe(75); // 3 / 4
+    expect(attrs.find((a) => a.label === "Güvenilirlik")?.value).toBe(90); // 4.5 / 5
+    expect(attrs.every((a) => a.value >= 0 && a.value <= 100)).toBe(true);
   });
 });

@@ -63,6 +63,18 @@ export const DEMO_STEPS: DemoStep[] = [
     ],
   },
   {
+    id: "istekler",
+    path: "/mac/atahan-pazar-maci/istekler",
+    title: "İstekleri Yönet: güvenilirlik işe yarıyor",
+    todo: "Organizatörü olduğun onaylı katılımlı maça 3 istek geldi. Güvenilirliklerine ve gelmediği maç sayısına bakıp onayla ya da reddet.",
+    mechanic:
+      "Organizatör “Katılımı ben onaylayayım” seçerse Maça Katıl istek gönderir. Takım arkadaşlarının oylarıyla oluşan güvenilirlik, burada gerçek bir karara dönüşür.",
+    theory: [
+      { name: "D6 · Hedef davranış", text: "Gelmeyen oyuncu sorununu azaltır: düşük güvenilirlik, onaylı maçlara girmeyi zorlaştırır." },
+      { name: "Hexad · Disruptor", text: "Kuralları bozan oyuncunun etkisi oy kurallarıyla ve organizatör onayıyla sınırlanır." },
+    ],
+  },
+  {
     id: "degerlendir",
     path: "/mac/demo-son-mac/degerlendir",
     title: "Maç sonu: takımı değerlendir, MVP seç",
@@ -95,8 +107,9 @@ export const DEMO_STEPS: DemoStep[] = [
     id: "siralama",
     path: "/siralama",
     title: "Şehrin En İyileri ve sezon sıralaması",
-    todo: "İlçe sıralamasında “İlk 10'a kalan fark” kartına, altta da canlı sezon tablosuna bak.",
-    mechanic: "Küresel tablo yok: ilçe bazlı sıralama ve bir üst hedefe kalan fark. Sezon tablosu her üç ayda sıfırlanır.",
+    todo: "Şehir sıralamasında kendi satırına ve bir üst hedefe kalan farka, altta da canlı sezon tablosuna bak. Bir oyuncunun adına dokununca herkese açık profili açılır.",
+    mechanic:
+      "Küresel tablo yok: şehir sıralaması ve bir üst hedefe kalan fark. Değerler takım arkadaşlarının oylarından hesaplanır. Sezon tablosu her üç ayda sıfırlanır.",
     theory: [
       { name: "Akış · Ulaşılabilir hedef", text: "En altta kalan çoğunluk için de görünür, yakın bir hedef olur." },
       { name: "PBL eleştirisi", text: "Liderlik tablosu tek başına değil, gerçek davranışa (gelmek, yardım etmek) bağlı XP ile çalışır." },

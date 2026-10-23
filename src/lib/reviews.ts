@@ -1,6 +1,6 @@
 import "server-only";
 import { getDb } from "./db";
-import { reliabilityScore, resolveAttendanceCounts, XP_REWARDS } from "./gamification";
+import { onTimeStreak, reliabilityScore, resolveAttendanceCounts, resolveOnTime, XP_REWARDS } from "./gamification";
 import { getMatch, logEvent } from "./matches";
 import { PRAISES } from "./praise";
 import type { LineupSlot, Match } from "./types";
@@ -45,6 +45,8 @@ export async function getReviewContext(matchId: string, viewerId: string): Promi
 export interface ReviewInput {
   playerId: string;
   attended: boolean;
+  /** Geldi ama geç kaldı (yalnızca attended true iken anlamlı) */
+  late?: boolean;
   praiseId: string | null;
 }
 
@@ -68,7 +70,8 @@ export function parseReviews(body: unknown): ReviewInput[] | null {
     if (typeof r.playerId !== "string" || typeof r.attended !== "boolean") return null;
     const praiseId = typeof r.praiseId === "string" && r.attended ? r.praiseId : null;
     if (praiseId && !PRAISES.some((p) => p.id === praiseId)) return null;
-    parsed.push({ playerId: r.playerId, attended: r.attended, praiseId });
+    const late = r.attended && r.late === true;
+    parsed.push({ playerId: r.playerId, attended: r.attended, late, praiseId });
   }
   return parsed;
 }
@@ -94,20 +97,25 @@ export async function submitReviews(
     return { ok: false, status: 400, error: "Maçın oyuncusu, maça gelen bir takım arkadaşı olmalı." };
   }
 
+  // Tüm oylar tek işlemde kaydedilir: ortada bir hata olursa hiçbiri kaydedilmez,
+  // kullanıcı da "zaten değerlendirdin" hatasına takılmadan tekrar gönderebilir.
   const db = await getDb();
-  for (const r of reviews) {
-    await db.query(
-      `INSERT INTO match_reviews (match_id, reviewer_id, target_id, attended, praise_id)
-       VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
-      [matchId, reviewerId, r.playerId, r.attended, r.praiseId],
-    );
-  }
-  if (mvpId) {
-    await db.query(
-      "INSERT INTO match_mvp_votes (match_id, voter_id, target_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-      [matchId, reviewerId, mvpId],
-    );
-  }
+  await db.transaction(async (tx) => {
+    for (const r of reviews) {
+      await tx.query(
+        `INSERT INTO match_reviews (match_id, reviewer_id, target_id, attended, praise_id, late)
+         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
+        [matchId, reviewerId, r.playerId, r.attended, r.praiseId, r.late ?? false],
+      );
+    }
+    if (mvpId) {
+      await tx.query("INSERT INTO match_mvp_votes (match_id, voter_id, target_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", [
+        matchId,
+        reviewerId,
+        mvpId,
+      ]);
+    }
+  });
   const xp = reviews.length * XP_REWARDS.ratedOthers;
   await logEvent(reviewerId, "match_reviewed", matchId, {
     mvp: mvpId,
@@ -129,34 +137,45 @@ export interface Reputation {
   confirmed: number;
   /** Henüz yeterli oy almamış (onay bekleyen) maçlar */
   pending: number;
+  /** Katılımı onaylanan ve çoğunluğa göre zamanında gelinen maçlar (her biri ek XP) */
+  onTime: number;
+  /** En yeni maçtan geriye, üst üste zamanında gelinen maç sayısı ("Demir Adam") */
+  onTimeStreak: number;
   reliability: number;
   /** Değerlendirdiği maç sayısı ("Adil Oyuncu" başarımı) */
   ratingsGiven: number;
   /** Değerlendirdiği oyuncu sayısı (her biri XP kazandırır) */
   reviewsGiven: number;
   praises: { id: string; label: string; emoji: string; count: number }[];
+  /** Takım arkadaşlarından alınan "Geldi" oyu sayısı (övgü oranlarının paydası) */
+  attendedVotes: number;
 }
 
 export async function getReputation(playerId: string): Promise<Reputation> {
   const db = await getDb();
-  const perMatch = await db.query<{ total: number; absent: number }>(
-    `SELECT count(r.target_id)::int AS total, count(*) FILTER (WHERE r.attended = false)::int AS absent
+  const perMatch = await db.query<{ total: number; absent: number; late: number }>(
+    `SELECT count(r.target_id)::int AS total,
+            count(*) FILTER (WHERE r.attended = false)::int AS absent,
+            count(*) FILTER (WHERE r.late)::int AS late
      FROM match_participants mp
      JOIN matches m ON m.id = mp.match_id AND m.starts_at < now()
      LEFT JOIN match_reviews r ON r.match_id = mp.match_id AND r.target_id = mp.player_id
      WHERE mp.player_id = $1
-     GROUP BY mp.match_id`,
+     GROUP BY mp.match_id, m.starts_at
+     ORDER BY m.starts_at DESC`,
     [playerId],
   );
   const decisions = perMatch.map((m) => resolveAttendanceCounts(m.total, m.absent));
   const decided = decisions.filter((d) => d !== null).length;
   const attended = decisions.filter((d) => d === true).length;
   const noShows = decisions.filter((d) => d === false).length;
+  const punctuality = perMatch.map((m) => resolveOnTime(m.total, m.absent, m.late)); // en yeni maç başta
 
   const [given] = await db.query<{ matches: number; people: number }>(
     "SELECT count(DISTINCT match_id)::int AS matches, count(*)::int AS people FROM match_reviews WHERE reviewer_id = $1",
     [playerId],
   );
+  const [received] = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM match_reviews WHERE target_id = $1 AND attended", [playerId]);
   const praiseRows = await db.query<{ praise_id: string; n: number }>(
     "SELECT praise_id, count(*)::int AS n FROM match_reviews WHERE target_id = $1 AND praise_id IS NOT NULL GROUP BY praise_id",
     [playerId],
@@ -168,9 +187,12 @@ export async function getReputation(playerId: string): Promise<Reputation> {
     decided,
     confirmed: attended,
     pending: perMatch.length - decided,
+    onTime: punctuality.filter((p) => p === true).length,
+    onTimeStreak: onTimeStreak(punctuality),
     reliability: reliabilityScore(decided, attended),
     ratingsGiven: given.matches,
     reviewsGiven: given.people,
     praises: PRAISES.map((p) => ({ ...p, count: praiseRows.find((r) => r.praise_id === p.id)?.n ?? 0 })),
+    attendedVotes: received.n,
   };
 }

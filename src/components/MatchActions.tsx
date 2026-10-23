@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleCheck, Crown, MessageSquare, X } from "lucide-react";
+import { CircleCheck, Crown, Hourglass, MessageSquare, UserCheck, X } from "lucide-react";
 import type { Sport } from "@/lib/types";
 
 /**
- * Maç detayının alt çubuğu: Katıl / Ayrıl.
+ * Maç detayının alt çubuğu: Katıl / Ayrıl / İstek gönder / İstekleri Yönet.
  * İstekler REST API'ye gider; başarılı olunca sayfa sunucudan yeniden çizilir (router.refresh).
+ * Onaylı katılımlı maçta POST 202 Accepted döner: istek organizatöre iletilmiştir.
  */
 export function MatchActions({
   matchId,
@@ -16,12 +17,19 @@ export function MatchActions({
   joined,
   isOrganizer,
   full,
+  requiresApproval,
+  requestStatus,
+  pendingRequests,
 }: {
   matchId: string;
   sport: Sport;
   joined: boolean;
   isOrganizer: boolean;
   full: boolean;
+  requiresApproval: boolean;
+  requestStatus: "pending" | "approved" | "declined" | null;
+  /** Organizatör için bekleyen istek sayısı */
+  pendingRequests: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -42,6 +50,19 @@ export function MatchActions({
     // Telefonda ekranın altına sabit; masaüstünde sağ kolonun sonunda normal akışta
     <div className="fixed bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-bg/95 px-5 pt-3 pb-6 backdrop-blur lg:static lg:mt-8 lg:max-w-none lg:translate-x-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
       {error && <p className="mb-2 text-center text-xs font-semibold text-danger">{error}</p>}
+
+      {isOrganizer && (
+        <Link
+          href={`/mac/${matchId}/istekler`}
+          className="mb-3 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface py-3 text-sm font-semibold"
+        >
+          <UserCheck size={16} className="text-primary" />
+          {requiresApproval ? "İstekleri Yönet" : "Kadroyu Yönet"}
+          {pendingRequests > 0 && (
+            <span className="rounded-full bg-warning px-1.5 text-[11px] font-bold text-white">{pendingRequests}</span>
+          )}
+        </Link>
+      )}
 
       {joined ? (
         <>
@@ -75,6 +96,24 @@ export function MatchActions({
             )}
           </div>
         </>
+      ) : requestStatus === "pending" ? (
+        <>
+          <p className="mb-2 flex items-center justify-center gap-1 text-xs font-semibold text-warning">
+            <Hourglass size={14} /> İsteğin organizatörün onayını bekliyor
+          </p>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => call("DELETE")}
+            className="w-full rounded-xl border border-line py-3.5 font-semibold text-muted disabled:opacity-50"
+          >
+            İsteği Geri Çek
+          </button>
+        </>
+      ) : requestStatus === "declined" ? (
+        <p className="rounded-xl border border-line py-3.5 text-center text-sm font-semibold text-muted">
+          Organizatör bu maç için isteğini kabul etmedi
+        </p>
       ) : full ? (
         <p className="rounded-xl border border-line py-3.5 text-center font-semibold text-muted">Kadro dolu</p>
       ) : sport === "futbol" ? (
@@ -83,7 +122,7 @@ export function MatchActions({
           href={`/mac/${matchId}/dizilim`}
           className="block rounded-xl bg-primary py-3.5 text-center font-semibold text-on-primary shadow-lg shadow-primary/30"
         >
-          Maça Katıl
+          {requiresApproval ? "Mevki Seç ve İstek Gönder" : "Maça Katıl"}
         </Link>
       ) : (
         <button
@@ -92,7 +131,7 @@ export function MatchActions({
           onClick={() => call("POST")}
           className="w-full rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30 disabled:opacity-50"
         >
-          {pending ? "Katılınıyor..." : "Maça Katıl"}
+          {pending ? "Gönderiliyor..." : requiresApproval ? "Katılma İsteği Gönder" : "Maça Katıl"}
         </button>
       )}
     </div>

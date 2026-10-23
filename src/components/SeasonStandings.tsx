@@ -13,10 +13,10 @@ interface Data {
  * Sezon sıralaması: her üç ayda bir sıfırlanır. Yeni oyuncu da üst sıralara çıkabilir (Akış: ulaşılabilir hedef).
  * Veri istemcide /api/season'dan okunur; böylece S.O.S ya da değerlendirme sonrası değişim hemen görünür.
  */
-export function SeasonStandings({ playerId: fallbackId }: { playerId: string }) {
+export function SeasonStandings() {
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
-  const [playerId, setPlayerId] = useState(fallbackId);
+  const [playerId, setPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")

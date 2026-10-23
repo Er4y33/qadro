@@ -51,6 +51,7 @@ describe("Maç oluşturma", () => {
         price: 0,
         minLevel: 1,
         isPublic: false,
+        requiresApproval: false,
         note: "",
       },
       "oguz",

@@ -94,9 +94,9 @@ Qadro **ikisini birlikte** kullanır. Next.js her sayfa için ayrı strateji se�
 | Strateji | Açılımı | Nerede, ne zaman üretilir? | Qadro'daki sayfa | Koddaki karşılığı |
 |---|---|---|---|---|
 | **SSG** | Static Site Generation | Sunucuda, **build anında** bir kez | `/giris`, `/hosgeldin`, `/saha/[id]` | Varsayılan; dinamik sayfalarda `generateStaticParams()` |
-| **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/`, `/mac/[id]`: maçlar ve kontenjan veritabanından, hep güncel | `export const dynamic = "force-dynamic"` |
-| **CSR** | Client-Side Rendering | **Tarayıcıda**, JavaScript ile | Maç oluşturma formu, harita, spor filtresi | Dosyanın başında `"use client"` |
-| **ISR** | Incremental Static Regeneration | Statik, belirli aralıklarla **arka planda yenilenir** | `/siralama`: Şehrin En İyileri | `export const revalidate = 300` |
+| **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/`, `/mac/[id]`, `/sohbetler`, `/profil`, `/oyuncu/[id]`, `/bildirimler`: hep güncel veri | `export const dynamic = "force-dynamic"` |
+| **CSR** | Client-Side Rendering | **Tarayıcıda**, JavaScript ile | Maç oluşturma formu, harita, Filtreler, sohbet odasındaki yeni mesaj sorgusu | Dosyanın başında `"use client"` |
+| **ISR** | Incremental Static Regeneration | Statik, belirli aralıklarla **arka planda yenilenir** | `/siralama`: Şehrin En İyileri (sorgu en fazla 5 dakikada bir çalışır, "Sen" satırı tarayıcıda eklenir) | `export const revalidate = 300` |
 
 Build çıktısında hangi sayfanın hangi stratejiyle üretildiği görülür:
 
@@ -139,7 +139,7 @@ Kök düzen kullanıcı bilgisini sunucuda okumaz (kenar menüdeki ad istemcide 
 
 ### Testler ve sürekli entegrasyon (CI)
 
-`npm test` 57 testi çalıştırır (Vitest). Oyun kuralları saf fonksiyon olarak yazıldığı için (`src/lib/gamification.ts`) doğrudan test edilir. Veritabanı senaryoları ise bellekte açılan PGlite üzerinde koşar; gerçek veritabanına dokunmaz.
+`npm test` 81 testi çalıştırır (Vitest). Oyun kuralları saf fonksiyon olarak yazıldığı için (`src/lib/gamification.ts`) doğrudan test edilir. Veritabanı senaryoları ise bellekte açılan PGlite üzerinde koşar; gerçek veritabanına dokunmaz.
 
 | Test edilen kural | Neden önemli |
 |---|---|
@@ -147,6 +147,11 @@ Kök düzen kullanıcı bilgisini sunucuda okumaz (kenar menüdeki ad istemcide 
 | Tek kişinin "Gelmedi" oyu yetmez | Kötüye kullanıma karşı oyunlaştırma kuralı |
 | Oynamadığın maçı değerlendiremezsin | Yetkilendirme (`403`) |
 | S.O.S çağrısını yalnızca bir kişi kabul eder | Eşzamanlılık |
+| İşlemin ortasında hata olursa her şey geri alınır | Transaction (ya hepsi ya hiçbiri) |
+| Kadroda olmayan takım sohbetini okuyamaz | Yetkilendirme (`403`) |
+| 5 hatalı şifre denemesinden sonra giriş kilitlenir | Kaba kuvvet saldırısına karşı (`429`) |
+| Onaylı katılımda istekleri yalnızca organizatör yönetir | Yetkilendirme (`403`) |
+| Filtrelerde "bugün" Türkiye saatine göre hesaplanır | Saat dilimi hatası (UTC'de gece yarısı) |
 
 GitHub Actions her push'ta lint → tip kontrolü → test → build adımlarını çalıştırır. Bir adım başarısız olursa GitHub'da kırmızı işaret görünür.
 
@@ -196,10 +201,15 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `players` | Oyuncular |
 | `matches` | Maçlar (branş, format, tarih, kontenjan, ücret, gizlilik) |
 | `match_participants` | Kim hangi maçta, sahada hangi bölgede |
-| `match_reviews` | Maç sonu oyları: kim, kimi, geldi mi, hangi övgüyü verdi |
-| `user_events` | Kullanıcı davranışları: `match_created`, `match_joined`, `match_left` → **dashboard** bunu kullanacak |
+| `match_reviews` | Maç sonu oyları: kim, kimi, geldi mi, geç kaldı mı, hangi övgüyü verdi |
+| `match_mvp_votes` | Maçın Oyuncusu oyları |
+| `sos_calls` | Eksik oyuncu çağrıları |
+| `join_requests` | Onaylı katılımlı maçlara gelen istekler (`pending` / `approved` / `declined`) |
+| `messages`, `chat_reads` | Takım sohbeti mesajları ve her oyuncunun en son gördüğü mesaj (okunmamış sayısı) |
+| `sessions`, `login_attempts` | Oturumlar (anahtarın özeti) ve hatalı giriş denemeleri |
+| `user_events` | Kullanıcı davranışları: `match_created`, `match_joined`, `message_sent`… → **dashboard** |
 
-**Eşzamanlılık:** Son boş yere iki kişi aynı anda tıklarsa ikisi de girmesin diye kontenjan kontrolü ve ekleme **tek SQL cümlesinde** yapılır (`src/lib/matches.ts → joinMatch`). Kaybeden taraf `409 Conflict` alır.
+**Eşzamanlılık:** Son boş yere iki kişi aynı anda tıklarsa ikisi de girmesin diye katılma bir **işlem (transaction)** içinde yapılır ve maç satırı `SELECT … FOR UPDATE` ile kilitlenir (`src/lib/matches.ts → joinMatch`). İkinci istek birincinin bitmesini bekler, güncel kayıt sayısını görür ve `409 Conflict` alır. Maç sonu oyları da tek işlemde kaydedilir: ortada hata olursa hiçbiri kaydedilmez (`src/lib/reviews.ts`). İşlem desteği `src/lib/db/index.ts → transaction()` içinde, iki sürücü için de (PGlite ve postgres.js) aynı arayüzle yazıldı.
 
 ### REST API
 
@@ -208,12 +218,20 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `GET /api/matches` | Maç listesi | `200` |
 | `POST /api/matches` | Maç oluşturur | `201` + `Location` başlığı · `400` doğrulama hatası |
 | `GET /api/matches/[id]` | Tek maç | `200` · `404` |
-| `POST /api/matches/[id]/participants` | Maça katılır | `201` · `404` · `409` dolu / zaten kadroda |
-| `DELETE /api/matches/[id]/participants` | Maçtan ayrılır | `204` · `404` · `409` organizatör ayrılamaz |
+| `POST /api/matches/[id]/participants` | Maça katılır; onaylı katılımlı maçta istek gönderir | `201` kadrodasın · `202 Accepted` istek organizatöre iletildi · `404` · `409` dolu / zaten kadroda / isteğin zaten var |
+| `DELETE /api/matches/[id]/participants` | Maçtan ayrılır ya da bekleyen isteği geri çeker; `?player=<id>` ile organizatör birini kadrodan çıkarır | `204` · `403` · `404` · `409` organizatör ayrılamaz |
+| `GET /api/matches/[id]/requests` | Bekleyen istekler, her oyuncunun güvenilirliğiyle | `200` · `401` · `403` organizatör değilsin · `404` |
+| `PATCH /api/matches/[id]/requests/[playerId]` | İsteği onaylar ya da reddeder `{ decision }` | `200` · `400` · `403` · `404` · `409` kadro dolu |
+| `GET /api/matches/[id]/messages?after=<id>` | Takım sohbeti mesajları (yalnızca yeniler) | `200` · `401` · `403` kadroda değilsin · `404` |
+| `POST /api/matches/[id]/messages` | Mesaj gönderir `{ body }` | `201` · `400` boş / 500 karakterden uzun · `403` · `404` |
+| `GET /api/notifications` · `POST /api/notifications` | Bildirimler · tümünü okundu işaretle | `200` · `204` · `401` |
+| `POST /api/share` | Paylaşımı olay günlüğüne yazar | `204` |
 | `POST /api/auth/register` | Kayıt olur, oturum açar | `201` + `Set-Cookie` · `400` · `409` e-posta kayıtlı |
-| `POST /api/auth/login` | Giriş yapar | `200` + `Set-Cookie` · `401` e-posta ya da şifre hatalı |
+| `POST /api/auth/login` | Giriş yapar | `200` + `Set-Cookie` · `401` e-posta ya da şifre hatalı · `429 Too Many Requests` + `Retry-After` |
 | `POST /api/auth/logout` | Çıkış yapar | `204` |
 | `GET /api/auth/me` | Giriş yapan oyuncu | `200` · `401` |
+| `PATCH /api/auth/me` · `DELETE /api/auth/me` | Ad değiştirir · hesabı siler (anonimleştirir) | `200` / `204` · `400` · `401` · `403` demo hesabı |
+| `POST /api/auth/password` | Şifre değiştirir, diğer cihazlardaki oturumları kapatır | `200` · `400` · `401` mevcut şifre hatalı · `403` |
 | `POST /api/matches/[id]/reviews` | Maç sonu "Takımı Değerlendir" (isteğe bağlı `mvpId`: Maçın Oyuncusu oyu) | `201` · `400` · `401` · `403` bu maçta oynamadın · `404` · `409` maç oynanmadı / zaten değerlendirdin |
 | `GET /api/sos` | Giriş yapan oyuncuya açık S.O.S çağrıları | `200` · `401` |
 | `POST /api/sos` | S.O.S çağrısı başlatır `{ matchId, position }` | `201` · `400` · `401` · `403` kadroda değilsin · `404` · `409` kadro tam / açık çağrı var |
@@ -257,6 +275,10 @@ Tarayıcı                                   Sunucu
 | Veritabanında oturum anahtarının yalnızca **özeti** | Sızıntıda oturumlar çalınamaz |
 | Hatalı girişte "e-posta **ya da** şifre hatalı" | Hangi e-postaların kayıtlı olduğu tahmin edilemez |
 | Şifre karşılaştırması `timingSafeEqual` ile | Yanıt süresinden bilgi sızmaz |
+| 15 dakikada aynı e-postaya 5, aynı IP'den 20 hatalı deneme sınırı (`429`) | Kaba kuvvetle şifre denemeyi durdurur (`login_attempts` tablosu) |
+| Şifre değişince diğer oturumlar kapanır | Şifre çalındıysa saldırganın açık oturumu düşer |
+| Hesap silme = anonimleştirme | E-posta ve şifre silinir; geçmiş maç kayıtları takım arkadaşlarının istatistiği bozulmasın diye "Silinmiş Oyuncu" olarak kalır |
+| Süresi dolan oturumlar her yeni girişte silinir | Tablo şişmez |
 
 **Demo hesabı:** Giriş ekranındaki "Demo hesabıyla dene" düğmesi, Figma tasarımındaki örnek oyuncu (Atahan) olarak giriş yapar. Hoca ve ekip kayıt olmadan uygulamayı deneyebilir.
 
@@ -274,7 +296,24 @@ Profil → **Kullanıcı Davranışı Paneli**. Tüm sayılar `user_events` tabl
 
 **Oyunlaştırma bağlantısı:** Huni ve doluluk oranı, D6 çerçevesindeki iş hedefinin (maçların dolması, oyuncuların gelmesi) ölçüsüdür. Oyun mekaniklerinin (XP, başarım, S.O.S) işe yarayıp yaramadığı bu panelden izlenir.
 
+### Takım sohbeti: neden WebSocket değil?
+
+Sohbet odası ilk mesajları sunucuda okur (SSR), sonra tarayıcı 4 saniyede bir `GET …/messages?after=<son id>` ile yalnızca yeni mesajları sorar (**polling**). Sekme arka plandayken sorgu yapılmaz.
+
+| Seçenek | Artı | Eksi |
+|---|---|---|
+| **Polling (seçilen)** | Ek servis gerektirmez, Vercel'in sunucusuz yapısıyla uyumlu, düz REST | En fazla 4 saniye gecikme, boşuna sorgular |
+| WebSocket / Supabase Realtime | Anlık | Sunucusuz ortamda açık bağlantı tutulamaz; ek servis ve yetkilendirme (RLS politikaları) gerekir |
+
+Maç kadrosu sohbeti için birkaç saniyelik gecikme kabul edilebilir; gerçek zamanlı sürüm yol haritasında.
+
+### Paylaşım önizleme görseli (Open Graph)
+
+`/oyuncu/[id]` bağlantısı WhatsApp'a yapıştırıldığında görünen kart, `src/app/oyuncu/[id]/opengraph-image.tsx` dosyasında sunucuda JSX'ten PNG olarak üretilir (`next/og`). Türkçe harfler için Inter yazı tipi projeyle gelir (`assets/fonts`, OFL lisanslı). "Başarını Paylaş" düğmesi telefonda Web Share API ile işletim sisteminin paylaşım menüsünü açar, masaüstünde bağlantıyı panoya kopyalar.
+
 ## 8. Sıradaki Adımlar
 
-- [ ] Şifremi unuttum (e-posta ile sıfırlama), Google ile giriş
+- [ ] Şifremi unuttum (e-posta ile sıfırlama), e-posta doğrulama, Google ile giriş
+- [ ] Gerçek zamanlı sohbet (Supabase Realtime) ve anlık bildirim (Web Push)
+- [ ] Şema değişiklikleri için migration aracı (Drizzle Kit ya da Supabase CLI)
 - [ ] Panelde tarih aralığı filtresi ve yalnızca yöneticinin görmesi (rol sistemi)

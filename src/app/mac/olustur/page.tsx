@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CreateMatchWizard } from "@/components/CreateMatchWizard";
-import { venues } from "@/lib/mock-data";
+import { venues } from "@/lib/venues";
 import { countOrganized } from "@/lib/players";
 import { requireViewer } from "@/lib/session";
 
