@@ -11,7 +11,11 @@ import { getCityLeaderboard } from "@/lib/leaderboard-data";
 export const revalidate = 300;
 
 export default async function LeaderboardPage() {
-  const entries = await getCityLeaderboard();
+  // Veritabanına o an ulaşılamazsa (ör. build sırasında) sayfa boş sıralamayla üretilir; ISR 5 dakika içinde yeniden dener.
+  const entries = await getCityLeaderboard().catch((err) => {
+    console.error("Sıralama verisi okunamadı:", err);
+    return [];
+  });
   return (
     <div className="lg:mx-auto lg:max-w-2xl lg:pt-4">
       <LeaderboardView entries={entries} />
