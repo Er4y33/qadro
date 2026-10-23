@@ -39,6 +39,30 @@ const connectionString =
   process.env.POSTGRES_URL ||
   Object.entries(process.env).find(([key, value]) => key.endsWith("_POSTGRES_URL") && value)?.[1];
 
+/** Bir sorgu bu süreden uzun sürerse bağlantı ölü sayılır (ms) */
+const QUERY_TIMEOUT_MS = 12_000;
+
+/**
+ * Sözü (promise) süre sınırıyla bekler. Süre dolarsa onTimeout çağrılır ve hata fırlatılır.
+ * Neden gerekli? Vercel, istek bitince fonksiyonu dondurur. Donmuşken Supabase'in havuzu bağlantıyı kapatabilir;
+ * fonksiyon uyandığında eski soket "yarı ölü" kalır ve üzerinden gönderilen sorgu hiç cevap almaz.
+ * Sınır olmasaydı sayfa "Sahaya iniliyor…" ekranında sonsuza kadar beklerdi.
+ */
+async function withTimeout<T>(promise: Promise<T>, onTimeout: () => void, ms = QUERY_TIMEOUT_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      onTimeout();
+      reject(new Error(`Veritabanı ${ms / 1000} saniye içinde yanıt vermedi; bağlantı yenilenecek.`));
+    }, ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function createDb(): Promise<Db> {
   if (connectionString) {
     const { default: postgres } = await import("postgres");
@@ -50,23 +74,33 @@ async function createDb(): Promise<Db> {
       ssl: local ? false : "require",
       prepare: false, // Supabase'in "transaction pooler" bağlantısı hazır sorguları desteklemez
       max: 1, // Sunucusuz (serverless) ortamda her örnek tek bağlantı kullanır
+      // Sunucusuz ortam için: 10 sn boşta kalan bağlantı kapanır, en fazla 5 dk yaşar.
+      // Böylece fonksiyon uykudan uyandığında eski (ölmüş olabilecek) bir soket yerine yeni bağlantı açılır.
+      idle_timeout: 10,
+      max_lifetime: 60 * 5,
+      connect_timeout: 10,
       onnotice: () => {},
     });
+    // Süre dolarsa bağlantı atılır ve bir sonraki istek sıfırdan bağlanır
+    const reset = () => {
+      globalForDb.qadroDb = undefined;
+      sql.end({ timeout: 0 }).catch(() => {});
+    };
     return {
       kind: "postgres",
       query: async <T,>(text: string, params: unknown[] = []) =>
-        (await sql.unsafe(text, params as never[])) as unknown as T[],
+        (await withTimeout(sql.unsafe(text, params as never[]), reset)) as unknown as T[],
       exec: async (text) => {
-        await sql.unsafe(text);
+        await withTimeout(sql.unsafe(text), reset);
       },
       transaction: async (fn) =>
-        (await sql.begin(async (tx) => {
+        (await withTimeout(sql.begin(async (tx) => {
           // Emniyet kemeri: bir kilit 5 saniyede alınamazsa ya da işlem yarıda kalıp boşta beklerse
           // (ör. sunucusuz fonksiyon dondurulduysa) PostgreSQL işlemi iptal eder; kilitler sonsuza kadar tutulmaz.
           await tx.unsafe("SET LOCAL lock_timeout = '5s'");
           await tx.unsafe("SET LOCAL idle_in_transaction_session_timeout = '15s'");
           return fn({ query: async <T,>(text: string, params: unknown[] = []) => (await tx.unsafe(text, params as never[])) as unknown as T[] });
-        })) as Awaited<ReturnType<typeof fn>>,
+        }), reset)) as Awaited<ReturnType<typeof fn>>,
     };
   }
 
