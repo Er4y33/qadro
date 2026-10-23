@@ -1,5 +1,7 @@
 # Qadro
 
+[![CI](https://github.com/Er4y33/qadro/actions/workflows/ci.yml/badge.svg)](https://github.com/Er4y33/qadro/actions/workflows/ci.yml)
+
 **Eksik oyuncu derdine son.** Qadro; futbol, basketbol, voleybol ve teniste eksik oyuncu ya da oynanacak maç bulmayı sağlayan, oyunlaştırılmış bir spor eşleştirme uygulamasıdır.
 
 Bu depo, **Web Programlama** ve **Oyunlaştırma Uygulamaları** derslerinin ortak dönem projesidir.
@@ -31,6 +33,21 @@ npm run dev
 Ayrı bir veritabanı kurmaya gerek yoktur: ilk açılışta proje klasöründe `.qadro-db/` oluşur ve örnek maçlar eklenir. Sıfırlamak için bu klasörü silmek yeterlidir.
 
 Tarayıcıda `http://localhost:3000` adresini açın. Arayüz responsive: telefonda tek kolon ve alt menü, bilgisayarda kenar menülü tam ekran düzen. Telefon görünümünü bilgisayarda denemek için F12 → cihaz simgesi.
+
+## Testler
+
+```bash
+npm test
+```
+
+57 otomatik test, iki grupta (`tests/` klasörü):
+
+| Dosya | Ne test ediliyor |
+|---|---|
+| `gamification.test.ts`, `rules.test.ts` | Oyun kuralları: seviye/XP, güvenilirlik, çoğunluk oyu, MVP, haftalık seri, sezonlar, başarımlar, liderlik tablosu, form doğrulama, şifre özetleme |
+| `database.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan dolunca katılamama, organizatörün ayrılamaması, değerlendirme yetkisi (403/409), S.O.S çağrısını yalnızca bir kişinin kabul edebilmesi |
+
+GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i otomatik çalıştırır (`.github/workflows/ci.yml`). Yukarıdaki rozet son durumu gösterir.
 
 ## Ekranlar
 

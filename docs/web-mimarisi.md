@@ -137,6 +137,21 @@ Kök düzen kullanıcı bilgisini sunucuda okumaz (kenar menüdeki ad istemcide 
 
 ---
 
+### Testler ve sürekli entegrasyon (CI)
+
+`npm test` 57 testi çalıştırır (Vitest). Oyun kuralları saf fonksiyon olarak yazıldığı için (`src/lib/gamification.ts`) doğrudan test edilir. Veritabanı senaryoları ise bellekte açılan PGlite üzerinde koşar; gerçek veritabanına dokunmaz.
+
+| Test edilen kural | Neden önemli |
+|---|---|
+| Kontenjan dolunca katılma reddedilir | Aynı yere iki kişinin girmesi engellenir (`409`) |
+| Tek kişinin "Gelmedi" oyu yetmez | Kötüye kullanıma karşı oyunlaştırma kuralı |
+| Oynamadığın maçı değerlendiremezsin | Yetkilendirme (`403`) |
+| S.O.S çağrısını yalnızca bir kişi kabul eder | Eşzamanlılık |
+
+GitHub Actions her push'ta lint → tip kontrolü → test → build adımlarını çalıştırır. Bir adım başarısız olursa GitHub'da kırmızı işaret görünür.
+
+---
+
 ## 5. Neden Next.js?
 
 | Ders gereksinimi | Next.js'teki karşılığı |
