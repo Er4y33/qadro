@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { SCHEMA_SQL } from "./schema";
 import { seed } from "./seed";
 
@@ -59,9 +60,13 @@ async function createDb(): Promise<Db> {
         await sql.unsafe(text);
       },
       transaction: async (fn) =>
-        (await sql.begin((tx) =>
-          fn({ query: async <T,>(text: string, params: unknown[] = []) => (await tx.unsafe(text, params as never[])) as unknown as T[] }),
-        )) as Awaited<ReturnType<typeof fn>>,
+        (await sql.begin(async (tx) => {
+          // Emniyet kemeri: bir kilit 5 saniyede alınamazsa ya da işlem yarıda kalıp boşta beklerse
+          // (ör. sunucusuz fonksiyon dondurulduysa) PostgreSQL işlemi iptal eder; kilitler sonsuza kadar tutulmaz.
+          await tx.unsafe("SET LOCAL lock_timeout = '5s'");
+          await tx.unsafe("SET LOCAL idle_in_transaction_session_timeout = '15s'");
+          return fn({ query: async <T,>(text: string, params: unknown[] = []) => (await tx.unsafe(text, params as never[])) as unknown as T[] });
+        })) as Awaited<ReturnType<typeof fn>>,
     };
   }
 
@@ -81,9 +86,36 @@ async function createDb(): Promise<Db> {
 // Geliştirme sunucusu dosyaları yeniden yüklediğinde ikinci bir bağlantı açılmasın diye global'de tutulur.
 const globalForDb = globalThis as unknown as { qadroDb?: Promise<Db> };
 
+/**
+ * Şema yalnızca DEĞİŞTİYSE uygulanır. SQL metninin özeti schema_meta tablosunda saklanır; aynıysa atlanır.
+ * Neden? "ALTER TABLE … ADD COLUMN IF NOT EXISTS" sütun zaten varsa bile tabloyu kısa süre kilitler.
+ * Vercel'de her soğuk başlangıçta bunu çalıştırmak hem yavaşlatır hem de başka bir bağlantının kilidini beklerken
+ * sayfanın takılmasına yol açabilir. Uygulanırken de 10 saniyelik kilit sınırı vardır: beklemek yerine hata verir,
+ * bir sonraki istek yeniden dener.
+ */
+async function applySchema(db: Db) {
+  const version = createHash("sha256").update(SCHEMA_SQL).digest("hex").slice(0, 16);
+  await db.exec("CREATE TABLE IF NOT EXISTS schema_meta (key text PRIMARY KEY, value text NOT NULL)");
+  const [row] = await db.query<{ value: string }>("SELECT value FROM schema_meta WHERE key = 'schema'");
+  if (row?.value === version) return;
+  if (db.kind === "postgres") {
+    await db.transaction(async (tx) => {
+      await tx.query("SET LOCAL lock_timeout = '10s'");
+      await tx.query(SCHEMA_SQL);
+    });
+  } else {
+    await db.exec(SCHEMA_SQL);
+  }
+  await db.query(
+    `INSERT INTO schema_meta (key, value) VALUES ('schema', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [version],
+  );
+}
+
 async function init(): Promise<Db> {
   const db = await createDb();
-  await db.exec(SCHEMA_SQL); // Tablolar yoksa oluşturur (IF NOT EXISTS)
+  await applySchema(db); // Tablolar yoksa ya da şema değiştiyse oluşturur / günceller
   await seed(db); // Tablolar boşsa örnek verileri ekler
   return db;
 }
