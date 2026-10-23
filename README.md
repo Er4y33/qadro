@@ -117,6 +117,7 @@ src/
 | [Oyunlaştırma entegrasyon rotası](docs/oyunlastirma-rotasi.md) | Oyunlaştırma Uygulamaları |
 | [Web mimarisi](docs/web-mimarisi.md) | Web Programlama |
 | [1. hafta: İlk Git deposu](docs/hafta-01-ilk-git-deposu.md) | Web Programlama |
+| [23 Ekim güncellemesi ve olay raporu](docs/23-ekim-guncellemesi.md) | Web Programlama |
 
 ## Oyunlaştırma
 
