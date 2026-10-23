@@ -7,6 +7,9 @@ export const dynamic = "force-dynamic";
  * GET /api/health → uygulamanın ve veritabanının durumu.
  * "database": "postgres" ise Supabase'e bağlı, "pglite" ise gömülü (geçici) veritabanı kullanılıyor.
  * 503 Service Unavailable: veritabanına ulaşılamıyor.
+ *
+ * Vercel her gün bu adresi bir kez çağırır (vercel.json → crons). Supabase'in ücretsiz planı 7 gün
+ * kullanılmayan projeyi duraklatıyor; günlük bu küçük sorgu veritabanını uyanık tutar.
  */
 export async function GET() {
   try {
