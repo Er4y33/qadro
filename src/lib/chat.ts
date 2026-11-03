@@ -42,14 +42,15 @@ export interface ChatSummary {
 async function isMember(matchId: string, playerId: string): Promise<boolean | null> {
   const db = await getDb();
   const [row] = await db.query<{ member: boolean }>(
-    `SELECT EXISTS (SELECT 1 FROM match_participants WHERE match_id = m.id AND player_id = $2) AS member
+    `SELECT (EXISTS (SELECT 1 FROM match_participants WHERE match_id = m.id AND player_id = $2)
+             OR EXISTS (SELECT 1 FROM match_invites WHERE match_id = m.id AND player_id = $2)) AS member
      FROM matches m WHERE m.id = $1`,
     [matchId, playerId],
   );
   return row ? row.member : null; // null → maç yok
 }
 
-/** Oyuncunun kadrosunda olduğu maçların sohbetleri; son mesajı en yeni olan en üstte */
+/** Oyuncunun kadrosunda olduğu ya da takımıyla davet edildiği maçların sohbetleri; son mesajı en yeni olan en üstte */
 export async function listChats(playerId: string): Promise<ChatSummary[]> {
   const db = await getDb();
   const rows = await db.query<{
@@ -69,14 +70,14 @@ export async function listChats(playerId: string): Promise<ChatSummary[]> {
             (SELECT count(*)::int FROM messages x
               WHERE x.match_id = m.id AND x.sender_id <> $1
                 AND x.id > COALESCE((SELECT last_read_id FROM chat_reads r WHERE r.match_id = m.id AND r.player_id = $1), 0)) AS unread
-     FROM match_participants mp
+     FROM (SELECT match_id FROM match_participants WHERE player_id = $1
+           UNION SELECT match_id FROM match_invites WHERE player_id = $1) mp
      JOIN matches m ON m.id = mp.match_id
      LEFT JOIN LATERAL (
        SELECT msg.body, msg.created_at, msg.sender_id, p.name AS sender_name
        FROM messages msg JOIN players p ON p.id = msg.sender_id
        WHERE msg.match_id = m.id ORDER BY msg.id DESC LIMIT 1
      ) lm ON true
-     WHERE mp.player_id = $1
      ORDER BY COALESCE(lm.created_at, m.created_at) DESC`,
     [playerId],
   );
@@ -102,7 +103,7 @@ export type MessagesResult =
 export async function getMessages(matchId: string, playerId: string, afterId = 0): Promise<MessagesResult> {
   const member = await isMember(matchId, playerId);
   if (member === null) return { ok: false, status: 404, error: "Maç bulunamadı." };
-  if (!member) return { ok: false, status: 403, error: "Takım sohbeti yalnızca kadrodaki oyunculara açık." };
+  if (!member) return { ok: false, status: 403, error: "Takım sohbeti yalnızca kadrodaki ve davet edilen oyunculara açık." };
 
   const db = await getDb();
   const rows = await db.query<{ id: string; sender_id: string; name: string; initials: string; color: string; body: string; created_at: Date }>(

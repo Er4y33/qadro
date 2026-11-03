@@ -34,21 +34,32 @@ Her branşın kendi vurgu rengi var. Renkler yalnızca `src/app/globals.css` dos
 - Bütün yerler doluysa ama kontenjan varsa **"Yedek Olarak Katıl"** ile mevkisiz katılınır.
 - Örnek veri: `batipark-basket`, `salon-voleybol`, `merkez-kort-ciftler` maçları (`src/lib/db/seed.ts`).
 
-## 3. Branşa özel övgüler ve radar grafiği
+## 3. Branşa özel övgüler ve 6 eksenli radar (ekip kararı)
 
-`src/lib/praise.ts`: her branşın 4 övgüsü var; **Centilmen** hepsinde ortak.
+`src/lib/praise.ts`: her branşın **6 beceri övgüsü** radarın 6 eksenini besler (altıgen); 🤝 **Centilmen** her branşta ortaktır ve radarda ekseni yoktur.
 
-| Branş | Övgüler (radar ekseni) |
+| Branş | Radar ekseni ← övgü |
 |---|---|
-| Futbol | 🤝 Centilmen (Fair Play) · ⚡ Dinamik (Hız) · 🧱 Kaya Gibi (Savunma) · 🧠 Taktiksel (Taktik) |
-| Basketbol | 🤝 Centilmen · 🎯 Keskin Şutör (Şut) · 🧠 Oyun Kurucu (Asist) · 🧱 Ribaund Canavarı (Ribaund) |
-| Voleybol | 🤝 Centilmen · 💥 Smaç Ustası (Smaç) · 🧱 Blok Duvarı (Blok) · 🎯 Altın Pas (Pas) |
-| Tenis | 🤝 Centilmen · 🚀 Servis Canavarı (Servis) · 🎾 File Ustası (Vole) · 🔋 Yorulmaz (Kondisyon) |
+| Futbol | Hız ← ⚡ Dinamik · Refleks ← 🧤 Refleks Ustası · Fizik ← 💪 Güç Merkezi · Defans ← 🧱 Kaya Gibi · Pas ← 🎯 Pas Makinesi · Vizyon ← 🧠 Taktiksel |
+| Basketbol | Şut ← 🎯 Keskin Şutör · Ribaund ← 🧱 Ribaund Canavarı · Fizik ← 💪 Güç Merkezi · Savunma ← 🛡️ Savunma Duvarı · Asist ← 🧠 Oyun Kurucu · T. Çalma ← 🦊 Top Hırsızı |
+| Voleybol | Smaç ← 💥 Smaç Ustası · Blok ← 🧱 Blok Duvarı · Refleks ← 🐱 Kedi Refleksi · Manşet ← 🙌 Manşet Ustası · Pas ← 🎯 Altın Pas · Servis ← 🚀 Servis Makinesi |
+| Tenis | Servis ← 🚀 Servis Canavarı · Forehand ← 💪 Forehand Ustası · Backhand ← 🎾 Backhand Ustası · Vole (File Önü) ← 🕸️ File Ustası · Hız ← ⚡ Şimşek · Kondisyon ← 🔋 Yorulmaz |
 
-- Maç sonu değerlendirmede yalnızca **o maçın branşının** övgüleri çıkar; başka branşın övgüsü API'de reddedilir (400).
-- Profilde branş sekmeleri var: her sekme o branşın övgülerini ve radar grafiğini gösterir. Eksenler = 4 övgü + Dakiklik + Güvenilirlik.
-- **Tasarımdan bilinçli sapma:** Figma'daki radar eksenleri (Şut, Ribaund, Fizik, Savunma…) uygulamada **övgülerden** hesaplanır. Oyuncu kendine puan veremez; her değer takım arkadaşlarının oylarından gelir (Malone ve Lepper: tanınma; manipülasyona karşı).
-- Eski basketbol/voleybol maçlarında verilmiş futbol övgüleri, şema güncellemesinde aynı sıradaki branş övgüsüne çevrildi (`schema.ts`).
+- Eksenler Figma'daki profillerden (futbol, basketbol, voleybol) ve ekibin tenis kararından alındı.
+- **Değer nasıl hesaplanır:** oyuncu kendine puan veremez; her eksen takım arkadaşlarının verdiği övgü sayısıdır. En çok övgü alınan beceri 100, diğerleri ona oranla çizilir (güçlü yönlerin şekli).
+- Maç sonu değerlendirmede yalnızca o maçın branşının övgüleri çıkar; başka branşın övgüsü API'de reddedilir (400).
+- **Active Context:** profilde branş sekmesine dokununca bütün ekran (alt menü dahil) o branşın rengini alır; profilden çıkınca önceki tema döner. Maç Oluştur sihirbazı da seçilen branşın rengindedir.
+
+## 3b. Takımlar = kayıtlı kadrolar (ekip kararı)
+
+Kalıcı bir klan değil; "Cuma Halı Saha Tayfası" gibi sık oynanan kemik kadro. `src/lib/teams.ts`, ekran: **Profil → Takımlarım** (`/takimlar`).
+
+1. Kadro bir kez kaydedilir (ad, branş, üyeler). Yalnızca **daha önce birlikte oynadığın** oyuncular eklenebilir (tanımadığın kişilere toplu davet/spam yok).
+2. Maç Oluştur'un son adımında **Takımını Davet Et** seçilir (ya da takım kartında **Bu Takımla Maç Aç**).
+3. Kadroda olmayan bütün üyelere **maç daveti** gider: Bildirimler'de "X seni maça davet etti", maç detayında davet kartı.
+4. Davet edilenler maçın **takım sohbetini** hemen görür ve yazabilir; katılmak için yine sahada yerini seçer (kontenjan ve onaylı katılım kuralları değişmez).
+
+Veritabanı: `teams`, `team_members`, `match_invites`. API: `GET/POST /api/teams`, `DELETE /api/teams/:id`, `POST /api/matches` gövdesinde `teamId`.
 
 ## 4. Güvenilirlik kademesi ("EFSANEVİ")
 
@@ -71,9 +82,9 @@ Her branşın kendi vurgu rengi var. Renkler yalnızca `src/app/globals.css` dos
 
 ## Sonraki adımlar (tasarımda olup henüz yapılmayanlar)
 
-- Keşfet ekranında arama sekmeleri (Tesisler / Oyuncular / Takımlar), son aramalar, "Bu hafta yükselişte".
+- Keşfet ekranında arama sekmeleri (Tesisler / Oyuncular / Takımlar), son aramalar, "Bu hafta yükselişte". (Takımlar artık var; Keşfet'teki arama sekmesi henüz yok.)
 - Maç Oluştur'da süre, aranan mevkiler, tenis için kort zemini ve oyuncu tipi (Rakip / Partner).
 
 ## Testler
 
-`tests/gamification.test.ts` ve `tests/database.test.ts`'e 9 yeni test eklendi (saha bölgeleri, tenis rolleri, branş övgüleri, radar eksenleri, kademe, yanlış branş övgüsünün reddi, Maç Geçmişi). Toplam: **90 test**.
+`tests/gamification.test.ts` ve `tests/database.test.ts`'e yeni testler eklendi: saha bölgeleri, tenis rolleri, branş övgüleri, 6 eksenli radar, kademe, yanlış branş övgüsünün reddi, Maç Geçmişi, takım kurma kuralı, takımla davet ve sohbet erişimi, takım silme yetkisi. Toplam: **93 test**.

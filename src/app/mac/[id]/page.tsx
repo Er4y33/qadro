@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Lock, MessageSquare, Plus, UserCheck } from "lucide-react";
+import { Lock, MessageSquare, Plus, UserCheck, UsersRound } from "lucide-react";
 import { Avatar, ScreenHeader, cn } from "@/components/ui";
 import { MatchActions } from "@/components/MatchActions";
 import { ShareButton } from "@/components/ShareButton";
@@ -8,6 +8,7 @@ import { getRequestStatus, listRequests } from "@/lib/requests";
 import { QadroMap } from "@/components/map/QadroMap";
 import { getVenue } from "@/lib/venues";
 import { getMatch } from "@/lib/matches";
+import { getInvite } from "@/lib/teams";
 import { requireViewer } from "@/lib/session";
 import { SPORT_LABELS } from "@/lib/types";
 
@@ -27,9 +28,10 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   const joined = match.participants.some((p) => p.id === viewer.id);
   const isOrganizer = match.organizer.id === viewer.id;
   const openSlots = match.capacity - match.joined;
-  const [requestStatus, requests] = await Promise.all([
+  const [requestStatus, requests, invite] = await Promise.all([
     joined ? null : getRequestStatus(match.id, viewer.id),
     isOrganizer ? listRequests(match.id, viewer.id) : null,
+    joined ? null : getInvite(match.id, viewer.id),
   ]);
   const pendingRequests = requests?.ok ? requests.requests.length : 0;
 
@@ -81,6 +83,19 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               <p className="mt-1 inline-flex items-center gap-1 rounded-md bg-info/15 px-2 py-0.5 text-xs font-semibold text-info">
                 <UserCheck size={13} /> Onaylı katılım: organizatör istekleri onaylıyor
               </p>
+            )}
+
+            {invite && (
+              <Link
+                href={`/sohbetler/${match.id}`}
+                className="mt-3 flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm"
+              >
+                <UsersRound size={16} className="shrink-0 text-primary" />
+                <span className="flex-1">
+                  <b>{invite.by}</b> seni {invite.team ? <b>{invite.team}</b> : "bu"} kadrosuyla davet etti. Takım sohbeti açık.
+                </span>
+                <MessageSquare size={16} className="shrink-0 text-primary" />
+              </Link>
             )}
 
             <div className="mt-4 grid grid-cols-[1fr_1.25fr_0.8fr] gap-2">

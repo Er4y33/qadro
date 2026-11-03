@@ -41,12 +41,12 @@ Tarayıcıda `http://localhost:3000` adresini açın. Arayüz responsive: telefo
 npm test
 ```
 
-90 otomatik test (`tests/` klasörü):
+93 otomatik test (`tests/` klasörü):
 
 | Dosya | Ne test ediliyor |
 |---|---|
 | `gamification.test.ts`, `rules.test.ts`, `filters.test.ts` | Oyun kuralları: seviye/XP, güvenilirlik, çoğunluk oyu, zamanında gelme ve Demir Adam serisi, MVP, haftalık seri, sezonlar, radar değerleri, branşa özel saha bölgeleri ve övgüler, güvenilirlik kademesi, başarımlar, liderlik tablosu, maç filtreleri (Türkiye saatiyle), form doğrulama, şifre özetleme |
-| `database.test.ts`, `features.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan, değerlendirme yetkisi (403/409), S.O.S, işlem (transaction) geri alma, takım sohbeti yetkisi ve okunmamış sayısı, onaylı katılım (istek, onay, ret, kadrodan çıkarma), giriş deneme sınırı (429), hesap silme, oylardan şehir sıralaması, yanlış branş övgüsünün reddi, Maç Geçmişi |
+| `database.test.ts`, `features.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan, değerlendirme yetkisi (403/409), S.O.S, işlem (transaction) geri alma, takım sohbeti yetkisi ve okunmamış sayısı, onaylı katılım (istek, onay, ret, kadrodan çıkarma), giriş deneme sınırı (429), hesap silme, oylardan şehir sıralaması, yanlış branş övgüsünün reddi, Maç Geçmişi, takımlar ve takımla davet |
 
 GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i otomatik çalıştırır (`.github/workflows/ci.yml`). Yukarıdaki rozet son durumu gösterir.
 
@@ -64,6 +64,7 @@ GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i 
 | `/sohbetler` | Takım grupları (okunmamış mesaj sayısıyla) ve birlikte oynanan kişiler | **SSR** + arama istemcide |
 | `/sohbetler/[id]` | Takım sohbeti: kadroya özel, 4 saniyede bir yeni mesaj sorgusu, IBAN kartı | SSR + CSR |
 | `/profil` | Kendi profilin: XP, seviye, güvenilirlik, seri, sezon, övgüler, başarımlar, oylardan radar grafiği, son maçlar, **Başarını Paylaş** | **SSR** |
+| `/takimlar` | **Takımlarım**: kayıtlı kadrolar; takımla maç açınca üyelere davet gider ve sohbete katılırlar | **SSR** + CSR |
 | `/profil/gecmis` | **Maç Geçmişi**: aylara göre maçlar, Oynandı / Gidilmedi durumu, alınan övgüler, branş filtresi | **SSR** |
 | `/oyuncu/[id]` | Herkese açık oyuncu profili (**Qadro Profilin**), paylaşım önizleme görseli (`opengraph-image`) | **SSR**, giriş gerektirmez |
 | `/ayarlar` | **Ayarlar**: ad, şifre değiştirme, tema, çıkış, hesabı silme | **SSR** + CSR |

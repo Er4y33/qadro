@@ -10,6 +10,7 @@ import {
   Settings,
   Star,
   Trophy,
+  UsersRound,
 } from "lucide-react";
 import { Avatar, SectionTitle } from "./ui";
 import { SportSkills } from "./SportSkills";
@@ -135,6 +136,18 @@ export function ProfileView({ profile, own }: { profile: Profile; own: boolean }
             <span className="text-xs text-muted">Sıralamanı gör</span>
             <ChevronRight size={16} className="text-muted" />
           </Link>
+
+          {own && (
+            <Link
+              href="/takimlar"
+              className="relative mt-3 flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3"
+            >
+              <UsersRound size={20} className="text-primary" />
+              <span className="flex-1 text-sm font-semibold">Takımlarım</span>
+              <span className="text-xs text-muted">Kayıtlı kadrolar</span>
+              <ChevronRight size={16} className="text-muted" />
+            </Link>
+          )}
 
           {own && (
             <Link

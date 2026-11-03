@@ -210,7 +210,7 @@ export function validateCreateMatch(body: unknown): { ok: true; value: CreateMat
 }
 
 /** "Cumartesi Akşamı Tenis" → "cumartesi-aksami-tenis-x7k2" */
-function slugify(text: string): string {
+export function slugify(text: string): string {
   const map: Record<string, string> = { ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u" };
   const base = text
     .toLocaleLowerCase("tr-TR")

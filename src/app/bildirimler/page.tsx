@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CalendarClock, ChevronLeft, Crown, Handshake, MessageSquare, Sparkles, UserCheck, UserPlus } from "lucide-react";
+import { Bell, CalendarClock, ChevronLeft, Crown, Handshake, MessageSquare, Sparkles, UserCheck, UserPlus, UsersRound } from "lucide-react";
 import { cn } from "@/components/ui";
 import { MarkAllRead } from "@/components/MarkAllRead";
 import { listNotifications, type Notification, type NotificationKind } from "@/lib/notifications";
@@ -54,6 +54,7 @@ export default async function NotificationsPage() {
 }
 
 const ICONS: Record<NotificationKind, { icon: typeof Bell; tone: string }> = {
+  invite: { icon: UsersRound, tone: "border-primary/50 bg-primary/10 text-primary" },
   request: { icon: UserPlus, tone: "border-info/50 bg-info/10 text-info" },
   decision: { icon: UserCheck, tone: "border-success/50 bg-success/10 text-success" },
   message: { icon: MessageSquare, tone: "border-primary/50 bg-primary/10 text-primary" },

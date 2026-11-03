@@ -1,6 +1,6 @@
 import "server-only";
 import { getDb } from "./db";
-import { seedApprovalDemo } from "./db/seed";
+import { seedApprovalDemo, seedTeams } from "./db/seed";
 import { syncLevels } from "./progress";
 import { praisesFor } from "./praise";
 
@@ -37,6 +37,7 @@ export async function resetDemo(now = new Date()) {
   const db = await getDb();
   await db.query("DELETE FROM matches WHERE id LIKE 'demo-%' OR id = 'atahan-pazar-maci'");
   await seedApprovalDemo(db);
+  await seedTeams(db); // silinmişse örnek takımlar ve davet geri gelir
 
   const insertMatch = async (m: {
     id: string;

@@ -128,7 +128,34 @@ export async function seed(db: Db) {
   await seedChat(db);
   await seedApprovalDemo(db);
   await seedSportCourts(db);
+  await seedTeams(db);
   await keepDemoFresh(db);
+}
+
+/**
+ * Örnek takımlar (kayıtlı kadrolar) ve bir takım daveti: Emre, "Batıpark Basket Ekibi" ile Atahan'ı
+ * basketbol maçına davet etmiş → Atahan'ın bildirimlerinde davet, sohbetlerinde maçın sohbeti görünür.
+ */
+const SEED_TEAMS: { id: string; owner: string; name: string; sport: string; members: string[] }[] = [
+  { id: "cuma-hali-saha-tayfasi", owner: "atahan", name: "Cuma Halı Saha Tayfası", sport: "futbol", members: ["ahmet", "can", "emre", "burak", "mert", "oguz"] },
+  { id: "hafta-sonu-kort-ekibi", owner: "can", name: "Hafta Sonu Kort Ekibi", sport: "tenis", members: ["atahan", "mert", "emre"] },
+  { id: "batipark-basket-ekibi", owner: "emre", name: "Batıpark Basket Ekibi", sport: "basketbol", members: ["atahan", "can", "furkan", "baris"] },
+];
+
+export async function seedTeams(db: Db) {
+  for (const t of SEED_TEAMS) {
+    await db.query("INSERT INTO teams (id, owner_id, name, sport) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING", [t.id, t.owner, t.name, t.sport]);
+    for (const p of [t.owner, ...t.members]) {
+      await db.query("INSERT INTO team_members (team_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [t.id, p]);
+    }
+  }
+  await db.query(
+    `INSERT INTO match_invites (match_id, player_id, invited_by, team_id)
+     SELECT 'batipark-basket', 'atahan', 'emre', 'batipark-basket-ekibi'
+     WHERE EXISTS (SELECT 1 FROM matches WHERE id = 'batipark-basket')
+       AND NOT EXISTS (SELECT 1 FROM match_participants WHERE match_id = 'batipark-basket' AND player_id = 'atahan')
+     ON CONFLICT DO NOTHING`,
+  );
 }
 
 /**

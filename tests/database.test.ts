@@ -7,6 +7,9 @@ import { authenticate, registerPlayer } from "@/lib/auth";
 import { createMatch, getMatch, joinMatch, leaveMatch, listMatches } from "@/lib/matches";
 import { submitReviews } from "@/lib/reviews";
 import { getMatchHistory } from "@/lib/history";
+import { createTeam, deleteTeam, inviteTeam, listTeams } from "@/lib/teams";
+import { getMessages } from "@/lib/chat";
+import { listNotifications } from "@/lib/notifications";
 import { answerSos, createSos } from "@/lib/sos";
 
 describe("Maça katılma ve kontenjan", () => {
@@ -154,5 +157,52 @@ describe("S.O.S çağrısı", () => {
     const created = await createSos("plaj-voleybolu", "can", "Smaçör");
     if (!created.ok) throw new Error(created.error);
     expect(await answerSos(created.id, "can")).toMatchObject({ ok: false, status: 409 });
+  });
+});
+
+describe("Takımlar (kayıtlı kadrolar)", () => {
+  const newMatch = (organizer: string) =>
+    createMatch(
+      {
+        title: "Takım Maçı",
+        sport: "futbol",
+        format: "5v5",
+        venueId: "elbistan-sentetik",
+        startsAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+        price: 0,
+        minLevel: 1,
+        isPublic: true,
+        requiresApproval: false,
+        note: "",
+      },
+      organizer,
+    );
+
+  it("takıma yalnızca birlikte oynanan oyuncular eklenebilir (spam engeli, API 400)", async () => {
+    const stranger = (await registerPlayer("Yabancı Biri", "yabanci@qadro.app", "sifre12345"))!;
+    expect(await createTeam("atahan", { name: "Deneme", sport: "futbol", memberIds: [stranger] })).toMatchObject({ ok: false, status: 400 });
+  });
+
+  it("takımla davet: üyelere davet gider, kadrodakilere gitmez; davetliler sohbeti görür ve bildirim alır", async () => {
+    const created = await createTeam("atahan", { name: "Perşembe Ekibi", sport: "futbol", memberIds: ["ahmet", "can"] });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    expect((await listTeams("ahmet")).some((t) => t.id === created.id)).toBe(true); // üye de takımı görür
+
+    const matchId = await newMatch("atahan");
+    await joinMatch(matchId, "can"); // Can zaten kadroda: davet almaz
+    expect(await inviteTeam(matchId, created.id, "ahmet")).toMatchObject({ ok: false, status: 403 }); // organizatör değil
+    expect(await inviteTeam(matchId, created.id, "atahan")).toEqual({ ok: true, invited: 1 });
+
+    expect((await getMessages(matchId, "ahmet")).ok).toBe(true); // davetli sohbeti okur
+    expect((await getMessages(matchId, "burak")).ok).toBe(false); // davetsiz okuyamaz
+    expect((await listNotifications("ahmet")).some((n) => n.kind === "invite" && n.href === `/mac/${matchId}`)).toBe(true);
+  });
+
+  it("takımı yalnızca kurucusu silebilir", async () => {
+    const created = await createTeam("atahan", { name: "Silinecek Ekip", sport: "futbol", memberIds: ["ahmet"] });
+    if (!created.ok) throw new Error("takım oluşmadı");
+    expect(await deleteTeam(created.id, "ahmet")).toMatchObject({ ok: false, status: 403 });
+    expect(await deleteTeam(created.id, "atahan")).toEqual({ ok: true });
   });
 });

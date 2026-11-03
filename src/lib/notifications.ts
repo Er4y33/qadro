@@ -11,7 +11,7 @@ import { getMvpWinners } from "./progress";
  * yaklaşan maç, alınan övgüler ve MVP seçilmek. ("Giriş yaptın" gibi bilgi kirliliği yok.)
  */
 
-export type NotificationKind = "request" | "decision" | "message" | "review" | "upcoming" | "praise" | "mvp";
+export type NotificationKind = "invite" | "request" | "decision" | "message" | "review" | "upcoming" | "praise" | "mvp";
 
 export interface Notification {
   id: string;
@@ -48,6 +48,25 @@ export async function listNotifications(playerId: string): Promise<Notification[
       title: `${r.name} katılma isteği gönderdi`,
       body: `${r.title} · Güvenilirliğine bakıp onayla ya da reddet`,
       href: `/mac/${r.match_id}/istekler`,
+      at: new Date(r.created_at).toISOString(),
+    });
+  }
+
+  // 1b. Takımla maç davetleri: henüz katılmadığım, başlamamış maçlar
+  const invites = await db.query<{ match_id: string; title: string; inviter: string; team: string | null; created_at: Date }>(
+    `SELECT i.match_id, m.title, p.name AS inviter, t.name AS team, i.created_at FROM match_invites i
+     JOIN matches m ON m.id = i.match_id JOIN players p ON p.id = i.invited_by LEFT JOIN teams t ON t.id = i.team_id
+     WHERE i.player_id = $1 AND m.starts_at > now()
+       AND NOT EXISTS (SELECT 1 FROM match_participants mp WHERE mp.match_id = i.match_id AND mp.player_id = $1)`,
+    [playerId],
+  );
+  for (const r of invites) {
+    items.push({
+      id: `inv-${r.match_id}`,
+      kind: "invite",
+      title: `${r.inviter} seni maça davet etti`,
+      body: `${r.title}${r.team ? ` · ${r.team}` : ""} · Takım sohbeti açık, katılmak için dokun`,
+      href: `/mac/${r.match_id}`,
       at: new Date(r.created_at).toISOString(),
     });
   }

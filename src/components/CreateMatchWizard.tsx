@@ -2,7 +2,18 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, Clock, Globe, Lock, MapPin, PartyPopper, Users, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  Clock,
+  Globe,
+  Lock,
+  MapPin,
+  PartyPopper,
+  Users,
+  UsersRound,
+  X,
+} from "lucide-react";
 import { SPORT_LABELS, type Sport, type Venue } from "@/lib/types";
 import { FORMATS, SPORT_EMOJI } from "@/lib/sports";
 import { cn } from "./ui";
@@ -35,22 +46,53 @@ function nextDays(count: number): DayOption[] {
 const toIso = (date: string, time: string) => `${date}T${time}:00+03:00`;
 
 /** Otomatik başlık önerisi: "Cumartesi Akşamı Tenis" */
-function suggestTitle(day: DayOption | undefined, time: string | null, sport: Sport) {
+function suggestTitle(
+  day: DayOption | undefined,
+  time: string | null,
+  sport: Sport,
+) {
   const hour = time ? Number(time.slice(0, 2)) : 20;
   const part = hour < 12 ? "Sabahı" : hour < 17 ? "Öğleden Sonra" : "Akşamı";
-  const weekday = day ? new Intl.DateTimeFormat("tr-TR", { weekday: "long" }).format(new Date(`${day.iso}T12:00:00`)) : "";
+  const weekday = day
+    ? new Intl.DateTimeFormat("tr-TR", { weekday: "long" }).format(
+        new Date(`${day.iso}T12:00:00`),
+      )
+    : "";
   return `${weekday} ${part} ${SPORT_LABELS[sport]}`.trim();
 }
 
-export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]; organizedBefore: number }) {
+export interface WizardTeam {
+  id: string;
+  name: string;
+  sport: Sport;
+  size: number;
+}
+
+export function CreateMatchWizard({
+  venues,
+  organizedBefore,
+  teams = [],
+  initialTeamId = null,
+}: {
+  venues: Venue[];
+  organizedBefore: number;
+  /** Organizatörün kayıtlı takımları: seçilirse üyelere maç daveti gider */
+  teams?: WizardTeam[];
+  initialTeamId?: string | null;
+}) {
+  const initialTeam = teams.find((t) => t.id === initialTeamId) ?? null;
   const [step, setStep] = useState(0);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
   const [title, setTitle] = useState("");
 
-  const [sport, setSport] = useState<Sport>("futbol");
-  const [format, setFormat] = useState(FORMATS.futbol[2].label);
+  const [sport, setSport] = useState<Sport>(initialTeam?.sport ?? "futbol");
+  const [format, setFormat] = useState(
+    initialTeam ? FORMATS[initialTeam.sport][0].label : FORMATS.futbol[2].label,
+  );
+  const [teamId, setTeamId] = useState<string | null>(initialTeam?.id ?? null);
+  const [invited, setInvited] = useState(0);
   const [days, setDays] = useState<DayOption[]>([]);
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
@@ -77,12 +119,19 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
     setFormat(FORMATS[s][0].label);
     setVenueId(null);
     setTitle("");
+    if (teams.find((t) => t.id === teamId)?.sport !== s) setTeamId(null);
   };
+  const sportTeams = teams.filter((t) => t.sport === sport);
 
   /** Bugün seçiliyse geçmiş saatler seçilemez */
-  const isPast = (t: string) => Boolean(date && new Date(toIso(date, t)).getTime() < Date.now());
+  const isPast = (t: string) =>
+    Boolean(date && new Date(toIso(date, t)).getTime() < Date.now());
 
-  const canContinue = [true, Boolean(date && time && venue && !isPast(time)), title.trim().length >= 3 && price >= 0 && minLevel >= 1][step];
+  const canContinue = [
+    true,
+    Boolean(date && time && venue && !isPast(time)),
+    title.trim().length >= 3 && price >= 0 && minLevel >= 1,
+  ][step];
 
   const publish = () =>
     startTransition(async () => {
@@ -91,11 +140,25 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
       const res = await fetch("/api/matches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, sport, format, venueId, startsAt: toIso(date!, time!), price, minLevel, isPublic, requiresApproval, note }),
+        body: JSON.stringify({
+          title,
+          sport,
+          format,
+          venueId,
+          startsAt: toIso(date!, time!),
+          price,
+          minLevel,
+          isPublic,
+          requiresApproval,
+          note,
+          teamId,
+        }),
       });
       const body = await res.json().catch(() => ({}));
-      if (res.status === 201) setCreatedId(body.id);
-      else setErrors(body.errors ?? [body.error ?? "Maç oluşturulamadı."]);
+      if (res.status === 201) {
+        setCreatedId(body.id);
+        setInvited(body.invited ?? 0);
+      } else setErrors(body.errors ?? [body.error ?? "Maç oluşturulamadı."]);
     });
 
   const next = () => {
@@ -106,13 +169,18 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
 
   if (createdId && venue && day && time) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <main
+        data-sport={sport}
+        className="flex flex-1 flex-col items-center justify-center px-6 text-center"
+      >
         <span className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 text-primary">
           <PartyPopper size={36} />
         </span>
         <h1 className="mt-5 text-2xl font-bold">Maç Yayında!</h1>
         <p className="mt-2 text-sm text-muted">
-          {isPublic ? "İlanın Keşfet'e düştü. Yakındaki oyuncular bildirim alacak." : "Gizli maç oluşturuldu. Bağlantıyı paylaşarak oyuncu davet et."}
+          {isPublic
+            ? "İlanın Keşfet'e düştü. Yakındaki oyuncular bildirim alacak."
+            : "Gizli maç oluşturuldu. Bağlantıyı paylaşarak oyuncu davet et."}
         </p>
 
         <div className="mt-6 w-full rounded-2xl border border-line bg-surface p-4 text-left text-sm">
@@ -122,8 +190,16 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
           <p className="mt-1 text-muted">
             {day.weekday} {day.day}, {time} • {venue.name}
           </p>
+          {invited > 0 && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-primary">
+              <UsersRound size={14} />{" "}
+              {teams.find((t) => t.id === teamId)?.name}: {invited} kişiye davet
+              gitti, takım sohbeti açıldı.
+            </p>
+          )}
           <p className="mt-3 text-xs font-semibold text-primary">
-            Organize ettiğin {organizedBefore + 1}. maç. Maç dolduğunda kadroyu onaylamayı unutma!
+            Organize ettiğin {organizedBefore + 1}. maç. Maç dolduğunda kadroyu
+            onaylamayı unutma!
           </p>
         </div>
 
@@ -141,14 +217,24 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
   }
 
   return (
-    <main className="flex-1 pb-32">
+    // Active Context: sihirbaz, seçilen branşın rengini alır
+    <main data-sport={sport} className="flex-1 pb-32">
       <header className="grid grid-cols-[40px_1fr_40px] items-center px-4 pt-5 pb-3">
         {step === 0 ? (
-          <Link href="/" aria-label="Kapat" className="flex h-10 w-10 items-center justify-center">
+          <Link
+            href="/"
+            aria-label="Kapat"
+            className="flex h-10 w-10 items-center justify-center"
+          >
             <X size={22} />
           </Link>
         ) : (
-          <button type="button" aria-label="Geri" onClick={() => setStep(step - 1)} className="flex h-10 w-10 items-center justify-center">
+          <button
+            type="button"
+            aria-label="Geri"
+            onClick={() => setStep(step - 1)}
+            className="flex h-10 w-10 items-center justify-center"
+          >
             <ChevronLeft size={24} />
           </button>
         )}
@@ -162,7 +248,13 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
 
       <div className="mx-5 grid grid-cols-3 gap-1.5" aria-hidden>
         {STEPS.map((s, i) => (
-          <div key={s} className={cn("h-1 rounded-full transition", i <= step ? "bg-primary" : "bg-surface-2")} />
+          <div
+            key={s}
+            className={cn(
+              "h-1 rounded-full transition",
+              i <= step ? "bg-primary" : "bg-surface-2",
+            )}
+          />
         ))}
       </div>
 
@@ -180,7 +272,9 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                     onClick={() => pickSport(s)}
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-2xl border py-5 font-semibold transition",
-                      sport === s ? "border-primary bg-primary/10 text-primary" : "border-line bg-surface text-fg",
+                      sport === s
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-line bg-surface text-fg",
                     )}
                   >
                     <span className="text-3xl">{SPORT_EMOJI[s]}</span>
@@ -201,7 +295,9 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                     onClick={() => setFormat(f.label)}
                     className={cn(
                       "rounded-full border px-5 py-2 text-sm font-semibold transition",
-                      format === f.label ? "border-primary bg-primary text-on-primary" : "border-line bg-surface",
+                      format === f.label
+                        ? "border-primary bg-primary text-on-primary"
+                        : "border-line bg-surface",
                     )}
                   >
                     {f.label}
@@ -209,7 +305,8 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                 ))}
               </div>
               <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
-                <Users size={16} /> Toplam <strong className="text-fg">{players} oyuncu</strong> gerekiyor
+                <Users size={16} /> Toplam{" "}
+                <strong className="text-fg">{players} oyuncu</strong> gerekiyor
               </p>
             </section>
           </>
@@ -228,10 +325,14 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                     onClick={() => setDate(d.iso)}
                     className={cn(
                       "flex w-16 shrink-0 flex-col items-center rounded-2xl border py-2.5 transition",
-                      date === d.iso ? "border-primary bg-primary text-on-primary" : "border-line bg-surface",
+                      date === d.iso
+                        ? "border-primary bg-primary text-on-primary"
+                        : "border-line bg-surface",
                     )}
                   >
-                    <span className="text-[11px] font-medium opacity-80">{d.weekday}</span>
+                    <span className="text-[11px] font-medium opacity-80">
+                      {d.weekday}
+                    </span>
                     <span className="text-lg font-bold">{d.day}</span>
                   </button>
                 ))}
@@ -250,7 +351,9 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                     onClick={() => setTime(t)}
                     className={cn(
                       "flex items-center justify-center gap-1 rounded-xl border py-2.5 text-sm font-semibold transition disabled:opacity-30",
-                      time === t ? "border-primary bg-primary text-on-primary" : "border-line bg-surface",
+                      time === t
+                        ? "border-primary bg-primary text-on-primary"
+                        : "border-line bg-surface",
                     )}
                   >
                     <Clock size={14} /> {t}
@@ -270,19 +373,26 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                       onClick={() => setVenueId(v.id)}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition",
-                        venueId === v.id ? "border-primary bg-primary/10" : "border-line bg-surface",
+                        venueId === v.id
+                          ? "border-primary bg-primary/10"
+                          : "border-line bg-surface",
                       )}
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-primary">
                         <MapPin size={20} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{v.name}</span>
+                        <span className="block truncate font-semibold">
+                          {v.name}
+                        </span>
                         <span className="block text-xs text-muted">
-                          {v.distanceKm} km • {v.driveMinutes} dk • {v.amenities[0]}
+                          {v.distanceKm} km • {v.driveMinutes} dk •{" "}
+                          {v.amenities[0]}
                         </span>
                       </span>
-                      {venueId === v.id && <Check size={20} className="text-primary" />}
+                      {venueId === v.id && (
+                        <Check size={20} className="text-primary" />
+                      )}
                     </button>
                   </li>
                 ))}
@@ -305,7 +415,9 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
 
             <section className="grid grid-cols-2 gap-3">
               <label className="rounded-xl border border-line bg-surface px-3 py-2">
-                <span className="block text-[11px] text-muted">Kişi Başı Ücret</span>
+                <span className="block text-[11px] text-muted">
+                  Kişi Başı Ücret
+                </span>
                 <span className="flex items-center font-semibold text-success">
                   ₺
                   <input
@@ -318,7 +430,9 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                 </span>
               </label>
               <label className="rounded-xl border border-line bg-surface px-3 py-2">
-                <span className="block text-[11px] text-muted">Minimum Seviye</span>
+                <span className="block text-[11px] text-muted">
+                  Minimum Seviye
+                </span>
                 <span className="flex items-center font-semibold text-warning">
                   Lvl.
                   <input
@@ -336,8 +450,18 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
               <h2 className="mb-3 font-bold">Kimler görebilir?</h2>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { value: true, icon: Globe, title: "Herkese Açık", hint: "Keşfet'e düşer" },
-                  { value: false, icon: Lock, title: "Gizli", hint: "Sadece davetle" },
+                  {
+                    value: true,
+                    icon: Globe,
+                    title: "Herkese Açık",
+                    hint: "Keşfet'e düşer",
+                  },
+                  {
+                    value: false,
+                    icon: Lock,
+                    title: "Gizli",
+                    hint: "Sadece davetle",
+                  },
                 ].map(({ value, icon: Icon, title, hint }) => (
                   <button
                     key={title}
@@ -346,10 +470,17 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                     onClick={() => setIsPublic(value)}
                     className={cn(
                       "rounded-2xl border p-3 text-left transition",
-                      isPublic === value ? "border-primary bg-primary/10" : "border-line bg-surface",
+                      isPublic === value
+                        ? "border-primary bg-primary/10"
+                        : "border-line bg-surface",
                     )}
                   >
-                    <Icon size={18} className={isPublic === value ? "text-primary" : "text-muted"} />
+                    <Icon
+                      size={18}
+                      className={
+                        isPublic === value ? "text-primary" : "text-muted"
+                      }
+                    />
                     <p className="mt-2 text-sm font-semibold">{title}</p>
                     <p className="text-xs text-muted">{hint}</p>
                   </button>
@@ -357,9 +488,12 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
               </div>
               <label className="mt-3 flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-line bg-surface p-3">
                 <span>
-                  <span className="block text-sm font-semibold">Katılımı ben onaylayayım</span>
+                  <span className="block text-sm font-semibold">
+                    Katılımı ben onaylayayım
+                  </span>
                   <span className="text-xs text-muted">
-                    &quot;Maça Katıl&quot; istek gönderir; güvenilirliklerine bakıp İstekleri Yönet ekranından onaylarsın.
+                    &quot;Maça Katıl&quot; istek gönderir; güvenilirliklerine
+                    bakıp İstekleri Yönet ekranından onaylarsın.
                   </span>
                 </span>
                 <input
@@ -370,6 +504,50 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                 />
               </label>
             </section>
+
+            {sportTeams.length > 0 && (
+              <section className="rounded-2xl border border-line bg-surface p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold">
+                  <UsersRound size={16} className="text-primary" /> Takımını
+                  Davet Et
+                </p>
+                <p className="mb-2 text-xs text-muted">
+                  Seçtiğin takımdaki herkese maç daveti gider ve hepsi maçın
+                  sohbetine katılır.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={teamId === null}
+                    onClick={() => setTeamId(null)}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-xs font-semibold",
+                      teamId === null
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-line text-muted",
+                    )}
+                  >
+                    Davet yok
+                  </button>
+                  {sportTeams.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      aria-pressed={teamId === t.id}
+                      onClick={() => setTeamId(t.id)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-semibold",
+                        teamId === t.id
+                          ? "border-primary bg-primary/15 text-primary"
+                          : "border-line text-muted",
+                      )}
+                    >
+                      {t.name} ({t.size})
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <textarea
               value={note}
@@ -391,9 +569,13 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
                   {day?.weekday} {day?.day}, {time}
                 </dd>
                 <dt className="text-muted">Saha</dt>
-                <dd className="truncate text-right font-semibold">{venue?.name}</dd>
+                <dd className="truncate text-right font-semibold">
+                  {venue?.name}
+                </dd>
                 <dt className="text-muted">Kadro</dt>
-                <dd className="text-right font-semibold">1 / {players} (sen dahil)</dd>
+                <dd className="text-right font-semibold">
+                  1 / {players} (sen dahil)
+                </dd>
               </dl>
             </section>
           </>
@@ -414,7 +596,11 @@ export function CreateMatchWizard({ venues, organizedBefore }: { venues: Venue[]
           onClick={next}
           className="w-full rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30 transition disabled:opacity-40 disabled:shadow-none"
         >
-          {step < STEPS.length - 1 ? `Devam Et (${STEPS[step + 1]})` : pending ? "Yayınlanıyor..." : "Maçı Yayınla"}
+          {step < STEPS.length - 1
+            ? `Devam Et (${STEPS[step + 1]})`
+            : pending
+              ? "Yayınlanıyor..."
+              : "Maçı Yayınla"}
         </button>
       </div>
     </main>

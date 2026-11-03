@@ -154,6 +154,29 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 );
 CREATE INDEX IF NOT EXISTS login_attempts_email_idx ON login_attempts (email, created_at);
 
+-- Takımlar = kayıtlı kadrolar ("Cuma Halı Saha Tayfası"). Kalıcı klan değil: sık oynayan grubu tek dokunuşla
+-- maça davet etmek için. Kurucu da üyedir. Davet edilen oyuncu maçın sohbetini görür, katılınca kadroya girer.
+CREATE TABLE IF NOT EXISTS teams (
+  id          text PRIMARY KEY,
+  owner_id    text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  name        text NOT NULL CHECK (char_length(name) BETWEEN 2 AND 40),
+  sport       text NOT NULL CHECK (sport IN ('futbol', 'basketbol', 'voleybol', 'tenis')),
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS team_members (
+  team_id    text NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  player_id  text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  PRIMARY KEY (team_id, player_id)
+);
+CREATE TABLE IF NOT EXISTS match_invites (
+  match_id    text NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  player_id   text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  invited_by  text NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  team_id     text REFERENCES teams(id) ON DELETE SET NULL,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (match_id, player_id)
+);
+
 CREATE INDEX IF NOT EXISTS matches_starts_at_idx ON matches (starts_at);
 CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at);
 
@@ -182,5 +205,8 @@ ALTER TABLE login_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE join_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_reads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE match_invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS schema_meta ENABLE ROW LEVEL SECURITY;
 `;
