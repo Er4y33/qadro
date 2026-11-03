@@ -1,7 +1,7 @@
 import "server-only";
 import { listChats } from "./chat";
 import { getDb } from "./db";
-import { PRAISES } from "./praise";
+import { praiseById } from "./praise";
 import { getMvpWinners } from "./progress";
 
 /*
@@ -126,7 +126,7 @@ export async function listNotifications(playerId: string): Promise<Notification[
   );
   const byMatch = new Map<string, { title: string; at: number; parts: string[]; total: number }>();
   for (const p of praises) {
-    const praise = PRAISES.find((x) => x.id === p.praise_id);
+    const praise = praiseById(p.praise_id);
     const entry = byMatch.get(p.match_id) ?? { title: p.title, at: 0, parts: [], total: 0 };
     entry.at = Math.max(entry.at, new Date(p.at).getTime());
     entry.total += p.n;

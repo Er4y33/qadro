@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { authenticate, registerPlayer } from "@/lib/auth";
 import { createMatch, getMatch, joinMatch, leaveMatch, listMatches } from "@/lib/matches";
 import { submitReviews } from "@/lib/reviews";
+import { getMatchHistory } from "@/lib/history";
 import { answerSos, createSos } from "@/lib/sos";
 
 describe("Maça katılma ve kontenjan", () => {
@@ -95,6 +96,11 @@ describe("Maç sonu değerlendirmesi", () => {
     expect(result).toMatchObject({ ok: false, status: 400 });
   });
 
+  it("başka branşın övgüsü verilemez: futbol maçında 'Keskin Şutör' reddedilir (API 400)", async () => {
+    const result = await submitReviews(PAST, "atahan", [{ playerId: "ahmet", attended: true, praiseId: "keskin-sutor" }]);
+    expect(result).toMatchObject({ ok: false, status: 400 });
+  });
+
   it("geçerli değerlendirme kaydedilir, ikinci kez gönderilemez", async () => {
     const reviews = [
       { playerId: "ahmet", attended: true, praiseId: "centilmen" },
@@ -102,6 +108,22 @@ describe("Maç sonu değerlendirmesi", () => {
     ];
     expect(await submitReviews(PAST, "atahan", reviews)).toMatchObject({ ok: true });
     expect(await submitReviews(PAST, "atahan", reviews)).toMatchObject({ ok: false, status: 409 });
+  });
+});
+
+describe("Maç Geçmişi", () => {
+  it("oynanmış maçlar en yeniden eskiye gelir; durum oylardan, övgü toplamı maçlardan hesaplanır", async () => {
+    const history = await getMatchHistory("atahan");
+    expect(history.total).toBeGreaterThan(0);
+    const dates = history.entries.map((e) => e.startsAt);
+    expect([...dates].sort().reverse()).toEqual(dates);
+    expect(history.praisesReceived).toBe(history.entries.reduce((s, e) => s + e.praises.reduce((t, p) => t + p.count, 0), 0));
+    expect(history.entries.every((e) => ["confirmed", "pending", "no_show"].includes(e.outcome))).toBe(true);
+  });
+
+  it("branş filtresi yalnızca o branşın maçlarını gösterir", async () => {
+    const basket = await getMatchHistory("atahan", "basketbol");
+    expect(basket.entries.every((e) => e.sport === "basketbol")).toBe(true);
   });
 });
 

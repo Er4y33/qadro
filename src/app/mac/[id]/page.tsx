@@ -131,12 +131,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                 </span>
               )}
               {Array.from({ length: Math.min(Math.max(0, openSlots), 4) }).map((_, i) =>
-                !joined && match.sport === "futbol" ? (
+                !joined ? (
                   <Link
                     key={i}
                     href={`/mac/${match.id}/dizilim`}
                     aria-label="Boş yere katıl"
-                    className="ml-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-danger text-danger"
+                    className="ml-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-primary text-primary"
                   >
                     <Plus size={16} />
                   </Link>

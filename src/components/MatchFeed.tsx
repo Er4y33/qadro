@@ -31,6 +31,13 @@ export function MatchFeed({ matches, viewerLevel }: { matches: Match[]; viewerLe
     }
   }, []);
 
+  // Branş teması: seçili branşın vurgu rengi tüm uygulamaya yansır (globals.css → data-sport)
+  useEffect(() => {
+    const root = document.documentElement;
+    if (filters.sport === "all") delete root.dataset.sport;
+    else root.dataset.sport = filters.sport;
+  }, [filters.sport]);
+
   const update = (patch: Partial<MatchFilters>) =>
     setFilters((f) => {
       const next = { ...f, ...patch };

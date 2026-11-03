@@ -116,23 +116,14 @@ export function MatchActions({
         </p>
       ) : full ? (
         <p className="rounded-xl border border-line py-3.5 text-center font-semibold text-muted">Kadro dolu</p>
-      ) : sport === "futbol" ? (
-        // Futbolda önce sahada bir bölge seçilir
+      ) : (
+        // Her branşta önce sahada/kortta bir yer seçilir (src/lib/courts.ts)
         <Link
           href={`/mac/${matchId}/dizilim`}
           className="block rounded-xl bg-primary py-3.5 text-center font-semibold text-on-primary shadow-lg shadow-primary/30"
         >
-          {requiresApproval ? "Mevki Seç ve İstek Gönder" : "Maça Katıl"}
+          {requiresApproval ? "Mevki Seç ve İstek Gönder" : sport === "tenis" ? "Korttaki Yerini Seç" : "Maça Katıl"}
         </Link>
-      ) : (
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => call("POST")}
-          className="w-full rounded-xl bg-primary py-3.5 font-semibold text-on-primary shadow-lg shadow-primary/30 disabled:opacity-50"
-        >
-          {pending ? "Gönderiliyor..." : requiresApproval ? "Katılma İsteği Gönder" : "Maça Katıl"}
-        </button>
       )}
     </div>
   );

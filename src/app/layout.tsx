@@ -25,6 +25,8 @@ const themeScript = `
 try {
   var t = localStorage.getItem("qadro-theme") || "dark";
   document.documentElement.dataset.theme = t;
+  var f = JSON.parse(localStorage.getItem("qadro-filters") || "{}");
+  if (f.sport && f.sport !== "all") document.documentElement.dataset.sport = f.sport;
 } catch (e) {
   document.documentElement.dataset.theme = "dark";
 }`;

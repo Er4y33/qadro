@@ -1,4 +1,6 @@
 import type { Db } from "./index";
+import { praisesFor } from "../praise";
+import type { Sport } from "../types";
 
 /**
  * Örnek maç geçmişi: son 8 haftada oynanmış 8 maç, takım arkadaşlarının oyları, övgüler ve MVP oyları.
@@ -20,7 +22,7 @@ interface HistoryMatch {
   daysAgo: number;
   time: string;
   venue: string;
-  sport: "futbol" | "basketbol" | "voleybol";
+  sport: Extract<Sport, "futbol" | "basketbol" | "voleybol">;
   format: string;
   capacity: number;
   title: string;
@@ -165,6 +167,9 @@ const SPECIALTY: Record<string, string | null> = {
 };
 const PRAISE_IDS = ["centilmen", "dinamik", "kaya-gibi", "taktiksel"];
 
+/** Futbol övgüsünü maçın branşındaki karşılığına çevirir (aynı sıradaki övgü; src/lib/praise.ts) */
+const forSport = (id: string | null, sport: Sport) => (id ? (praisesFor(sport)[PRAISE_IDS.indexOf(id)]?.id ?? id) : null);
+
 /** Türkiye saatiyle `days` gün önce, verilen saatte */
 function daysAgo(days: number, time: string): string {
   const d = new Date(Date.now() + 3 * 3600_000);
@@ -209,7 +214,7 @@ export async function seedHistory(db: Db) {
       const spec = SPECIALTY[target];
       chosen.forEach((reviewer, k) => {
         const second = spec ? PRAISE_IDS[(PRAISE_IDS.indexOf(spec) + 1) % PRAISE_IDS.length] : null;
-        const praise = attended ? [spec, second, spec, null][k] : null;
+        const praise = attended ? forSport([spec, second, spec, null][k], m.sport) : null;
         reviews.push([m.id, reviewer, target, attended, praise, late, startsAt]);
       });
     }

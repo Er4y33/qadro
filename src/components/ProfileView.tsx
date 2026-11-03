@@ -12,14 +12,14 @@ import {
   Trophy,
 } from "lucide-react";
 import { Avatar, SectionTitle } from "./ui";
-import { RadarChart } from "./RadarChart";
+import { SportSkills } from "./SportSkills";
 import { ThemeToggle } from "./ThemeToggle";
 import { LogoutButton } from "./LogoutButton";
 import { BadgeGrid } from "./BadgeGrid";
 import { BackButton } from "./BackButton";
 import { ShareButton } from "./ShareButton";
 import { evaluateBadges } from "@/lib/badges";
-import { levelFromXp, XP_REWARDS } from "@/lib/gamification";
+import { levelFromXp, reliabilityTier, XP_REWARDS } from "@/lib/gamification";
 import type { Profile } from "@/lib/players";
 
 const dateFmt = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "short" });
@@ -78,14 +78,15 @@ export function ProfileView({ profile, own }: { profile: Profile; own: boolean }
 
           <section className="relative mt-5 grid grid-cols-3 gap-3 text-center">
             <Stat value={profile.stats.matchesPlayed} label="Oynanan Maç" />
-            <Stat
-              value={
-                <span className="inline-flex items-center gap-1 text-warning">
-                  {profile.reliability.toFixed(1)} <Star size={13} fill="currentColor" />
-                </span>
-              }
-              label="Güvenilirlik"
-            />
+            <div className="rounded-2xl border border-line bg-surface px-2 py-3">
+              <p
+                className="mx-auto flex w-fit items-center gap-1 rounded-lg bg-gradient-to-r from-[#ffd54f] to-[#ff8a00] px-3 py-0.5 text-lg font-bold text-[#121419] tabular-nums"
+                title="Takım arkadaşlarının Geldi/Gelmedi oylarından hesaplanan güvenilirlik puanı (0–5)"
+              >
+                {profile.reliability.toFixed(1)} <Star size={13} fill="currentColor" />
+              </p>
+              <p className="mt-1 text-[11px] font-bold tracking-wide text-warning uppercase">{reliabilityTier(profile.reliability).label.toLocaleUpperCase("tr")}</p>
+            </div>
             <Stat value={profile.mvpAwards} label="MVP Ödülü" />
           </section>
 
@@ -148,23 +149,7 @@ export function ProfileView({ profile, own }: { profile: Profile; own: boolean }
         </div>
 
         <div>
-          <section className="mt-6 lg:mt-0">
-            <SectionTitle>Övgüler</SectionTitle>
-            <div className="grid grid-cols-4 gap-2">
-              {profile.praises.map((p) => (
-                <div
-                  key={p.id}
-                  className={`rounded-2xl border border-line bg-surface py-3 text-center ${p.count === 0 ? "opacity-40" : ""}`}
-                  title={`${p.label}: ${p.count} kez`}
-                >
-                  <p className="text-xl">{p.emoji}</p>
-                  <p className="mt-1 text-lg font-bold tabular-nums">{p.count}</p>
-                  <p className="text-[10px] text-muted">{p.label}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted">Maç sonunda takım arkadaşların veriyor. XP kazandırmaz, itibarını gösterir.</p>
-          </section>
+          <SportSkills skills={profile.skills} initial={profile.primarySport} />
 
           <section className="mt-6">
             <SectionTitle>Başarımlar</SectionTitle>
@@ -172,30 +157,11 @@ export function ProfileView({ profile, own }: { profile: Profile; own: boolean }
           </section>
 
           <section className="mt-6">
-            <SectionTitle>Oyuncu Özellikleri</SectionTitle>
-            <div className="rounded-2xl border border-line bg-surface p-2">
-              {profile.attributes ? (
-                <RadarChart data={profile.attributes} />
-              ) : (
-                <p className="px-4 py-8 text-center text-sm text-muted">
-                  Maçlardan sonra takım arkadaşları değerlendirdikçe özellik grafiği burada oluşacak.
-                </p>
-              )}
-            </div>
-            {profile.attributes && (
-              <p className="mt-2 text-xs text-muted">
-                Takım arkadaşlarının oylarından hesaplanır: övgü eksenleri &quot;Geldi&quot; oylarının yüzde kaçında o övgünün
-                verildiğini, Dakiklik onaylı maçların yüzde kaçına zamanında gelindiğini gösterir.
-              </p>
-            )}
-          </section>
-
-          <section className="mt-6">
             <SectionTitle
               action={
                 own ? (
-                  <Link href="/" className="text-sm font-semibold text-primary">
-                    Yeni maç bul
+                  <Link href="/profil/gecmis" className="text-sm font-semibold text-primary">
+                    Tümünü Gör
                   </Link>
                 ) : undefined
               }

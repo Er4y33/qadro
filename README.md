@@ -41,12 +41,12 @@ Tarayıcıda `http://localhost:3000` adresini açın. Arayüz responsive: telefo
 npm test
 ```
 
-81 otomatik test (`tests/` klasörü):
+90 otomatik test (`tests/` klasörü):
 
 | Dosya | Ne test ediliyor |
 |---|---|
-| `gamification.test.ts`, `rules.test.ts`, `filters.test.ts` | Oyun kuralları: seviye/XP, güvenilirlik, çoğunluk oyu, zamanında gelme ve Demir Adam serisi, MVP, haftalık seri, sezonlar, radar değerleri, başarımlar, liderlik tablosu, maç filtreleri (Türkiye saatiyle), form doğrulama, şifre özetleme |
-| `database.test.ts`, `features.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan, değerlendirme yetkisi (403/409), S.O.S, işlem (transaction) geri alma, takım sohbeti yetkisi ve okunmamış sayısı, onaylı katılım (istek, onay, ret, kadrodan çıkarma), giriş deneme sınırı (429), hesap silme, oylardan şehir sıralaması |
+| `gamification.test.ts`, `rules.test.ts`, `filters.test.ts` | Oyun kuralları: seviye/XP, güvenilirlik, çoğunluk oyu, zamanında gelme ve Demir Adam serisi, MVP, haftalık seri, sezonlar, radar değerleri, branşa özel saha bölgeleri ve övgüler, güvenilirlik kademesi, başarımlar, liderlik tablosu, maç filtreleri (Türkiye saatiyle), form doğrulama, şifre özetleme |
+| `database.test.ts`, `features.test.ts` | Bellekte çalışan gerçek PostgreSQL (PGlite) üzerinde senaryolar: kontenjan, değerlendirme yetkisi (403/409), S.O.S, işlem (transaction) geri alma, takım sohbeti yetkisi ve okunmamış sayısı, onaylı katılım (istek, onay, ret, kadrodan çıkarma), giriş deneme sınırı (429), hesap silme, oylardan şehir sıralaması, yanlış branş övgüsünün reddi, Maç Geçmişi |
 
 GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i otomatik çalıştırır (`.github/workflows/ci.yml`). Yukarıdaki rozet son durumu gösterir.
 
@@ -56,14 +56,15 @@ GitHub'a her push'ta **GitHub Actions** lint, tip kontrolü, testler ve build'i 
 |---|---|---|
 | `/hosgeldin` | Tanıtım (3 adım) | Statik (SSG) |
 | `/giris`, `/kayit` | Giriş ve kayıt ("Sahaya Adım At!") | Statik (SSG) + form istemcide |
-| `/` | Ana sayfa: branş seçimi, **Filtreler** (tarih, ücret, boş yer, seviye), maç listesi, okunmamış bildirim sayısı | **SSR** + filtreler istemcide (CSR) |
+| `/` | Ana sayfa: branş seçimi (seçili branşın **tema rengi** tüm uygulamaya yansır), **Filtreler** (tarih, ücret, boş yer, seviye), maç listesi, okunmamış bildirim sayısı | **SSR** + filtreler istemcide (CSR) |
 | `/mac/[id]` | Maç detayı: katıl / ayrıl / katılma isteği gönder, paylaş | **SSR**: kontenjan her istekte veritabanından |
-| `/mac/[id]/dizilim` | Saha dizilimi, bölge seçerek katılma | SSR + CSR |
+| `/mac/[id]/dizilim` | Branşa özel saha dizilimi (futbol sahası, basketbol yarım saha, voleybol filesi, tenis kortu), yer seçerek katılma | SSR + CSR |
 | `/mac/[id]/istekler` | **İstekleri Yönet** ve **Onaylanan Kadro** (organizatöre özel) | **SSR** + CSR |
 | `/mac/olustur` | 3 adımlı maç oluşturma (branş/format → zaman/saha → kurallar, onaylı katılım) | Sunucu bileşeni + CSR form |
 | `/sohbetler` | Takım grupları (okunmamış mesaj sayısıyla) ve birlikte oynanan kişiler | **SSR** + arama istemcide |
 | `/sohbetler/[id]` | Takım sohbeti: kadroya özel, 4 saniyede bir yeni mesaj sorgusu, IBAN kartı | SSR + CSR |
 | `/profil` | Kendi profilin: XP, seviye, güvenilirlik, seri, sezon, övgüler, başarımlar, oylardan radar grafiği, son maçlar, **Başarını Paylaş** | **SSR** |
+| `/profil/gecmis` | **Maç Geçmişi**: aylara göre maçlar, Oynandı / Gidilmedi durumu, alınan övgüler, branş filtresi | **SSR** |
 | `/oyuncu/[id]` | Herkese açık oyuncu profili (**Qadro Profilin**), paylaşım önizleme görseli (`opengraph-image`) | **SSR**, giriş gerektirmez |
 | `/ayarlar` | **Ayarlar**: ad, şifre değiştirme, tema, çıkış, hesabı silme | **SSR** + CSR |
 | `/kesfet` | Haritada açık maçlar (Leaflet + OpenStreetMap) | SSR + harita istemcide (CSR) |
@@ -118,6 +119,7 @@ src/
 | [Web mimarisi](docs/web-mimarisi.md) | Web Programlama |
 | [1. hafta: İlk Git deposu](docs/hafta-01-ilk-git-deposu.md) | Web Programlama |
 | [23 Ekim güncellemesi ve olay raporu](docs/23-ekim-guncellemesi.md) | Web Programlama |
+| [Kasım 2026: branşa özel tasarım](docs/kasim-tasarim-guncellemesi.md) | Web Programlama, Oyunlaştırma |
 
 ## Oyunlaştırma
 

@@ -37,5 +37,5 @@ export default async function TeamReviewPage({ params }: { params: Promise<{ id:
   }
 
   const profile = await getProfile(viewer);
-  return <TeamReview matchId={id} teammates={context.teammates} ratingsGivenBefore={profile.stats.ratingsGiven} />;
+  return <TeamReview sport={context.match.sport} matchId={id} teammates={context.teammates} ratingsGivenBefore={profile.stats.ratingsGiven} />;
 }

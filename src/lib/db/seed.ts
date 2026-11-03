@@ -127,13 +127,106 @@ export async function seed(db: Db) {
   await seedHistory(db);
   await seedChat(db);
   await seedApprovalDemo(db);
+  await seedSportCourts(db);
   await keepDemoFresh(db);
+}
+
+/**
+ * Branşa özel saha dizilimlerini göstermek için birer basketbol, voleybol ve tenis maçı (Kasım 2026 tasarımı).
+ * Oyuncuların sahadaki yerleri src/lib/courts.ts'teki bölgelerle aynıdır. Varsa dokunulmaz.
+ */
+const SPORT_COURT_MATCHES: {
+  id: string;
+  venue: string;
+  title: string;
+  sport: string;
+  format: string;
+  days: number;
+  time: string;
+  price: number;
+  capacity: number;
+  organizer: string;
+  note: string;
+  lineup: [player: string, position?: string, x?: number, y?: number][];
+}[] = [
+  {
+    id: "batipark-basket",
+    venue: "kmaras-kapali",
+    title: "Batıpark Akşam Basketi",
+    sport: "basketbol",
+    format: "5v5",
+    days: 1,
+    time: "20:30",
+    price: 60,
+    capacity: 10,
+    organizer: "emre",
+    note: "Yarı saha ısınma, sonra tam saha 5×5. Uzun forvet ve oyun kurucu arıyoruz.",
+    lineup: [
+      ["emre", "Pvt", 35, 30],
+      ["can", "Şut", 17, 60],
+      ["furkan", "Knt", 83, 60],
+      ["baris"], // mevki seçmeden katılan oyuncu
+    ],
+  },
+  {
+    id: "salon-voleybol",
+    venue: "elbistan-salon",
+    title: "Salon Voleybolu",
+    sport: "voleybol",
+    format: "6v6",
+    days: 2,
+    time: "19:00",
+    price: 40,
+    capacity: 12,
+    organizer: "ahmet",
+    note: "Sadece 1 libero ve 1 smaçör eksiğimiz var. File yüksekliği standart erkek filesi olacak.",
+    lineup: [
+      ["ahmet", "Pas", 80, 72],
+      ["kerem", "Ort", 50, 26],
+      ["serkan", "Çpr", 80, 26],
+      ["hakan", "SmçA", 20, 72],
+    ],
+  },
+  {
+    id: "merkez-kort-ciftler",
+    venue: "elbistan-tenis",
+    title: "Merkez Kort Çiftler",
+    sport: "tenis",
+    format: "Çiftler",
+    days: 1,
+    time: "18:30",
+    price: 80,
+    capacity: 4,
+    organizer: "can",
+    note: "Sert zemin. Seviyesi orta, keyifli bir çiftler maçı.",
+    lineup: [
+      ["can", "Kort", 28, 20],
+      ["mert", "Kort", 72, 80],
+    ],
+  },
+];
+
+async function seedSportCourts(db: Db) {
+  for (const m of SPORT_COURT_MATCHES) {
+    const inserted = await db.query(
+      `INSERT INTO matches (id, venue_id, title, sport, format, starts_at, price, capacity, min_level, organizer_id, note)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, $9, $10) ON CONFLICT (id) DO NOTHING RETURNING id`,
+      [m.id, m.venue, m.title, m.sport, m.format, inDays(m.days, m.time), m.price, m.capacity, m.organizer, m.note],
+    );
+    if (inserted.length === 0) continue;
+    for (const [player, position, x, y] of m.lineup) {
+      await db.query(
+        "INSERT INTO match_participants (match_id, player_id, position, x, y) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING",
+        [m.id, player, position ?? null, x ?? null, y ?? null],
+      );
+    }
+  }
 }
 
 const APPROVAL_MATCH_ID = "atahan-pazar-maci";
 
 /** Örnek maçların kimlikleri (kullanıcıların açtığı maçlara dokunulmaz) */
-const DEMO_MATCH_IDS = [...MATCHES.map((m) => m.id), APPROVAL_MATCH_ID];
+const DEMO_MATCH_IDS = [...MATCHES.map((m) => m.id), APPROVAL_MATCH_ID, ...SPORT_COURT_MATCHES.map((m) => m.id)];
 
 /**
  * Demo hesabının (Atahan) organizatörü olduğu, onaylı katılımlı bir maç ve bekleyen 3 istek.

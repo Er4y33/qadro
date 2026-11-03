@@ -2,7 +2,8 @@ import "server-only";
 import { getDb } from "./db";
 import { onTimeStreak, reliabilityScore, resolveAttendanceCounts, resolveOnTime, XP_REWARDS } from "./gamification";
 import { getMatch, logEvent } from "./matches";
-import { PRAISES } from "./praise";
+import { praiseById, praisesFor } from "./praise";
+import { SPORT_LABELS, type Sport } from "./types";
 import type { LineupSlot, Match } from "./types";
 
 /*
@@ -69,7 +70,7 @@ export function parseReviews(body: unknown): ReviewInput[] | null {
     const r = item as Record<string, unknown>;
     if (typeof r.playerId !== "string" || typeof r.attended !== "boolean") return null;
     const praiseId = typeof r.praiseId === "string" && r.attended ? r.praiseId : null;
-    if (praiseId && !PRAISES.some((p) => p.id === praiseId)) return null;
+    if (praiseId && !praiseById(praiseId)) return null;
     const late = r.attended && r.late === true;
     parsed.push({ playerId: r.playerId, attended: r.attended, late, praiseId });
   }
@@ -91,6 +92,11 @@ export async function submitReviews(
   const teammateIds = new Set(context.teammates.map((t) => t.player.id));
   if (reviews.some((r) => !teammateIds.has(r.playerId)) || new Set(reviews.map((r) => r.playerId)).size !== reviews.length) {
     return { ok: false, status: 400, error: "Değerlendirme listesi bu maçın kadrosuyla uyuşmuyor." };
+  }
+  // Övgü, maçın branşına ait olmalı (basketbol maçında "Kaya Gibi" verilemez)
+  const sportPraises = new Set(praisesFor(context.match.sport).map((p) => p.id));
+  if (reviews.some((r) => r.praiseId && !sportPraises.has(r.praiseId))) {
+    return { ok: false, status: 400, error: "Bu övgü maçın branşına ait değil." };
   }
   // MVP yalnızca "Geldi" oyu verilen bir takım arkadaşı olabilir
   if (mvpId && !reviews.some((r) => r.playerId === mvpId && r.attended)) {
@@ -146,10 +152,15 @@ export interface Reputation {
   ratingsGiven: number;
   /** Değerlendirdiği oyuncu sayısı (her biri XP kazandırır) */
   reviewsGiven: number;
-  praises: { id: string; label: string; emoji: string; count: number }[];
+  /** Futbol övgüleri ve sayıları (eski kullanım; branşa göre ayrıntı bySport'ta) */
+  praises: PraiseCount[];
   /** Takım arkadaşlarından alınan "Geldi" oyu sayısı (övgü oranlarının paydası) */
   attendedVotes: number;
+  /** Branşa göre övgüler ve "Geldi" oyları: profildeki branş sekmeleri ve radar grafiği bunu kullanır */
+  bySport: Record<Sport, { attendedVotes: number; praises: PraiseCount[] }>;
 }
+
+export type PraiseCount = { id: string; label: string; emoji: string; axis: string; count: number };
 
 export async function getReputation(playerId: string): Promise<Reputation> {
   const db = await getDb();
@@ -175,11 +186,29 @@ export async function getReputation(playerId: string): Promise<Reputation> {
     "SELECT count(DISTINCT match_id)::int AS matches, count(*)::int AS people FROM match_reviews WHERE reviewer_id = $1",
     [playerId],
   );
-  const [received] = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM match_reviews WHERE target_id = $1 AND attended", [playerId]);
-  const praiseRows = await db.query<{ praise_id: string; n: number }>(
-    "SELECT praise_id, count(*)::int AS n FROM match_reviews WHERE target_id = $1 AND praise_id IS NOT NULL GROUP BY praise_id",
+  const received = await db.query<{ sport: Sport; n: number }>(
+    `SELECT m.sport, count(*)::int AS n FROM match_reviews r JOIN matches m ON m.id = r.match_id
+     WHERE r.target_id = $1 AND r.attended GROUP BY m.sport`,
     [playerId],
   );
+  const praiseRows = await db.query<{ sport: Sport; praise_id: string; n: number }>(
+    `SELECT m.sport, r.praise_id, count(*)::int AS n FROM match_reviews r JOIN matches m ON m.id = r.match_id
+     WHERE r.target_id = $1 AND r.praise_id IS NOT NULL GROUP BY m.sport, r.praise_id`,
+    [playerId],
+  );
+  const sportsList = Object.keys(SPORT_LABELS) as Sport[];
+  const bySport = Object.fromEntries(
+    sportsList.map((sport) => [
+      sport,
+      {
+        attendedVotes: received.find((r) => r.sport === sport)?.n ?? 0,
+        praises: praisesFor(sport).map((p) => ({
+          ...p,
+          count: praiseRows.find((r) => r.sport === sport && r.praise_id === p.id)?.n ?? 0,
+        })),
+      },
+    ]),
+  ) as Reputation["bySport"];
 
   return {
     pastMatches: perMatch.length,
@@ -192,7 +221,8 @@ export async function getReputation(playerId: string): Promise<Reputation> {
     reliability: reliabilityScore(decided, attended),
     ratingsGiven: given.matches,
     reviewsGiven: given.people,
-    praises: PRAISES.map((p) => ({ ...p, count: praiseRows.find((r) => r.praise_id === p.id)?.n ?? 0 })),
-    attendedVotes: received.n,
+    praises: bySport.futbol.praises,
+    attendedVotes: received.reduce((sum, r) => sum + r.n, 0),
+    bySport,
   };
 }

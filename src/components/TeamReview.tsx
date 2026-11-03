@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, Crown, PartyPopper, X } from "lucide-react";
-import type { LineupSlot } from "@/lib/types";
+import type { LineupSlot, Sport } from "@/lib/types";
 import { BADGES } from "@/lib/badges";
 import { XP_REWARDS } from "@/lib/gamification";
-import { POSITION_NAMES, PRAISES } from "@/lib/praise";
+import { POSITION_NAMES, praisesFor } from "@/lib/praise";
 import { Avatar, ProgressBar, cn } from "./ui";
 
 interface Review {
@@ -24,10 +24,12 @@ interface Review {
  */
 export function TeamReview({
   matchId,
+  sport,
   teammates,
   ratingsGivenBefore,
 }: {
   matchId: string;
+  sport: Sport;
   teammates: LineupSlot[];
   ratingsGivenBefore: number;
 }) {
@@ -201,7 +203,7 @@ export function TeamReview({
         <h3 className="text-center font-bold">Öne Çıkan Özelliği Neydi?</h3>
         <p className="text-center text-xs text-muted">(Bir övgü vererek profilini güçlendir)</p>
         <div className={cn("mt-3 grid grid-cols-2 gap-3", review.attended === false && "pointer-events-none opacity-40")}>
-          {PRAISES.map((p) => (
+          {praisesFor(sport).map((p) => (
             <button
               key={p.id}
               type="button"

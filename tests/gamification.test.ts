@@ -13,7 +13,10 @@ import {
   onTimeStreak,
   playerAttributes,
   resolveOnTime,
+  reliabilityTier,
 } from "@/lib/gamification";
+import { isTaken, tennisRole, zonesFor } from "@/lib/courts";
+import { ALL_PRAISES, praisesFor } from "@/lib/praise";
 
 describe("Seviye ve XP", () => {
   it("0 XP ile oyuncu 1. seviyededir", () => {
@@ -174,5 +177,54 @@ describe("Oyuncu özellikleri (radar)", () => {
     expect(attrs.find((a) => a.label === "Dakiklik")?.value).toBe(75); // 3 / 4
     expect(attrs.find((a) => a.label === "Güvenilirlik")?.value).toBe(90); // 4.5 / 5
     expect(attrs.every((a) => a.value >= 0 && a.value <= 100)).toBe(true);
+  });
+});
+
+describe("Branşa özel saha, övgü ve kademe (Kasım 2026 tasarımı)", () => {
+  it("her branşın kendi saha bölgeleri vardır; tenis teklerde iki, çiftlerde dört yer", () => {
+    expect(zonesFor("basketbol", "5v5").map((z) => z.label)).toContain("Pivot");
+    expect(zonesFor("voleybol", "6v6").map((z) => z.label)).toContain("Libero");
+    expect(zonesFor("tenis", "Tekler")).toHaveLength(2);
+    expect(zonesFor("tenis", "Çiftler")).toHaveLength(4);
+    // Kısa kodlar veritabanına yazılır: en fazla 8 karakter (API sınırı)
+    for (const sport of ["futbol", "basketbol", "voleybol", "tenis"] as const) {
+      for (const z of zonesFor(sport, "Çiftler")) expect(z.short.length).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it("dolu bölge, sahadaki oyuncunun yerine yakın olandır", () => {
+    expect(isTaken({ x: 35, y: 30 }, [{ x: 36, y: 31 }])).toBe(true);
+    expect(isTaken({ x: 35, y: 30 }, [{ x: 66, y: 30 }])).toBe(false);
+  });
+
+  it("tenis kortunda aynı taraf Partner, karşı taraf Rakip", () => {
+    expect(tennisRole(80, 20)).toBe("Rakip");
+    expect(tennisRole(20, 20)).toBe("Partner");
+    expect(tennisRole(80, undefined)).toBe("Rakip");
+  });
+
+  it("her branşın övgüleri farklıdır, Centilmen ortaktır ve kimlikler benzersizdir", () => {
+    expect(praisesFor("basketbol").map((p) => p.label)).toEqual(["Centilmen", "Keskin Şutör", "Oyun Kurucu", "Ribaund Canavarı"]);
+    expect(praisesFor("voleybol").some((p) => p.id === "kaya-gibi")).toBe(false);
+    expect(new Set(ALL_PRAISES.map((p) => p.id)).size).toBe(ALL_PRAISES.length);
+  });
+
+  it("radar eksenleri övgünün eksen adını kullanır", () => {
+    const attrs = playerAttributes({
+      praises: praisesFor("basketbol").map((p) => ({ ...p, count: 2 })),
+      attendedVotes: 4,
+      confirmed: 1,
+      onTime: 1,
+      reliability: 5,
+    })!;
+    expect(attrs.map((a) => a.label)).toEqual(["Fair Play", "Şut", "Asist", "Ribaund", "Dakiklik", "Güvenilirlik"]);
+  });
+
+  it("güvenilirlik kademesi: 4.7 ve üstü Efsanevi", () => {
+    expect(reliabilityTier(4.8).label).toBe("Efsanevi");
+    expect(reliabilityTier(4.7).id).toBe("efsanevi");
+    expect(reliabilityTier(4.2).id).toBe("guvenilir");
+    expect(reliabilityTier(3.1).id).toBe("gelisiyor");
+    expect(reliabilityTier(2.5).id).toBe("riskli");
   });
 });

@@ -37,6 +37,44 @@
   color-scheme: dark;
 }
 
+/*
+ * Branş temaları (Melih'in Kasım 2026 tasarımı): her branşın kendi vurgu rengi var.
+ * data-sport, ana sayfada seçili branş filtresine göre <html> etiketine, maç sayfalarında maçın branşına göre
+ * sayfanın kapsayıcısına yazılır. Futbol varsayılan yeşildir. Açık temada aynı tonların koyusu kullanılır.
+ */
+[data-sport="futbol"] {
+  --primary: #00e676;
+  --accent: var(--primary);
+}
+[data-sport="basketbol"] {
+  --primary: #ff8a00;
+  --accent: var(--primary);
+}
+[data-sport="voleybol"] {
+  --primary: #b388ff;
+  --accent: var(--primary);
+}
+[data-sport="tenis"] {
+  --primary: #00d4ff;
+  --accent: var(--primary);
+}
+:root:not([data-theme="dark"])[data-sport="futbol"],
+:root:not([data-theme="dark"]) [data-sport="futbol"] {
+  --primary: #00c46a;
+}
+:root:not([data-theme="dark"])[data-sport="basketbol"],
+:root:not([data-theme="dark"]) [data-sport="basketbol"] {
+  --primary: #e67700;
+}
+:root:not([data-theme="dark"])[data-sport="voleybol"],
+:root:not([data-theme="dark"]) [data-sport="voleybol"] {
+  --primary: #7c4dff;
+}
+:root:not([data-theme="dark"])[data-sport="tenis"],
+:root:not([data-theme="dark"]) [data-sport="tenis"] {
+  --primary: #0096c7;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);

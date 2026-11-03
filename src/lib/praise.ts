@@ -1,3 +1,5 @@
+import type { Sport } from "./types";
+
 /**
  * Övgüler: Oyuncuların maç sonunda birbirine verdiği etiketler.
  *
@@ -10,14 +12,51 @@ export interface Praise {
   id: string;
   label: string;
   emoji: string;
+  /** Radar grafiğinde bu övgünün beslediği eksen */
+  axis: string;
 }
 
-export const PRAISES: Praise[] = [
-  { id: "centilmen", label: "Centilmen", emoji: "🎩" },
-  { id: "dinamik", label: "Dinamik", emoji: "⚡" },
-  { id: "kaya-gibi", label: "Kaya Gibi", emoji: "🧱" },
-  { id: "taktiksel", label: "Taktiksel", emoji: "🧠" },
-];
+const CENTILMEN: Praise = { id: "centilmen", label: "Centilmen", emoji: "🤝", axis: "Fair Play" };
+
+/**
+ * Branşa özel övgüler (Melih'in Kasım 2026 tasarımı). Centilmenlik her branşta ortaktır.
+ * Kimlikler veritabanında saklanır; futbolun eski kimlikleri (dinamik, kaya-gibi, taktiksel) korunmuştur.
+ */
+export const SPORT_PRAISES: Record<Sport, Praise[]> = {
+  futbol: [
+    CENTILMEN,
+    { id: "dinamik", label: "Dinamik", emoji: "⚡", axis: "Hız" },
+    { id: "kaya-gibi", label: "Kaya Gibi", emoji: "🧱", axis: "Savunma" },
+    { id: "taktiksel", label: "Taktiksel", emoji: "🧠", axis: "Taktik" },
+  ],
+  basketbol: [
+    CENTILMEN,
+    { id: "keskin-sutor", label: "Keskin Şutör", emoji: "🎯", axis: "Şut" },
+    { id: "oyun-kurucu", label: "Oyun Kurucu", emoji: "🧠", axis: "Asist" },
+    { id: "ribaund-canavari", label: "Ribaund Canavarı", emoji: "🧱", axis: "Ribaund" },
+  ],
+  voleybol: [
+    CENTILMEN,
+    { id: "smac-ustasi", label: "Smaç Ustası", emoji: "💥", axis: "Smaç" },
+    { id: "blok-duvari", label: "Blok Duvarı", emoji: "🧱", axis: "Blok" },
+    { id: "altin-pas", label: "Altın Pas", emoji: "🎯", axis: "Pas" },
+  ],
+  tenis: [
+    CENTILMEN,
+    { id: "servis-canavari", label: "Servis Canavarı", emoji: "🚀", axis: "Servis" },
+    { id: "file-ustasi", label: "File Ustası", emoji: "🎾", axis: "Vole" },
+    { id: "yorulmaz", label: "Yorulmaz", emoji: "🔋", axis: "Kondisyon" },
+  ],
+};
+
+/** Futbol övgüleri (eski kullanım için) */
+export const PRAISES = SPORT_PRAISES.futbol;
+
+/** Bütün branşların övgüleri, her kimlik bir kez */
+export const ALL_PRAISES: Praise[] = [...new Map(Object.values(SPORT_PRAISES).flat().map((p) => [p.id, p])).values()];
+
+export const praisesFor = (sport: Sport): Praise[] => SPORT_PRAISES[sport];
+export const praiseById = (id: string): Praise | undefined => ALL_PRAISES.find((p) => p.id === id);
 
 /** Kısa mevki etiketlerinin değerlendirme ekranındaki açık hali */
 export const POSITION_NAMES: Record<string, string> = {
@@ -30,4 +69,18 @@ export const POSITION_NAMES: Record<string, string> = {
   SolB: "Sol Bek",
   SağB: "Sağ Bek",
   Lib: "Libero",
+  // Basketbol
+  Pvt: "Pivot",
+  UF: "Uzun Forvet",
+  Şut: "Şutör",
+  Knt: "Kanat",
+  OK: "Oyun Kurucu",
+  // Voleybol
+  Smç: "Smaçör",
+  Ort: "Orta Oyuncu",
+  Çpr: "Pasör Çaprazı",
+  SmçA: "Arka Smaçör",
+  Pas: "Pasör",
+  // Tenis
+  Kort: "Kort",
 };

@@ -160,6 +160,16 @@ CREATE INDEX IF NOT EXISTS user_events_created_at_idx ON user_events (created_at
 -- Düzeltme: ilk sürümde payload metin olarak kaydedilmişti ("{...}"), gerçek JSON nesnesine çevir.
 UPDATE user_events SET payload = (payload #>> '{}')::jsonb WHERE jsonb_typeof(payload) = 'string';
 
+-- Branşa özel övgüler (Kasım 2026): basketbol/voleybol/tenis maçlarında verilmiş eski futbol övgüleri,
+-- aynı sıradaki branş övgüsüne çevrilir (src/lib/praise.ts). Tekrar çalışması bir şey değiştirmez.
+UPDATE match_reviews r SET praise_id = CASE m.sport
+    WHEN 'basketbol' THEN CASE r.praise_id WHEN 'dinamik' THEN 'keskin-sutor' WHEN 'kaya-gibi' THEN 'ribaund-canavari' ELSE 'oyun-kurucu' END
+    WHEN 'voleybol'  THEN CASE r.praise_id WHEN 'dinamik' THEN 'smac-ustasi' WHEN 'kaya-gibi' THEN 'blok-duvari' ELSE 'altin-pas' END
+    ELSE CASE r.praise_id WHEN 'dinamik' THEN 'servis-canavari' WHEN 'kaya-gibi' THEN 'yorulmaz' ELSE 'file-ustasi' END
+  END
+FROM matches m
+WHERE m.id = r.match_id AND m.sport <> 'futbol' AND r.praise_id IN ('dinamik', 'kaya-gibi', 'taktiksel');
+
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_participants ENABLE ROW LEVEL SECURITY;

@@ -5,6 +5,13 @@ import { daysLeft, levelFromXp, playerAttributes, XP_REWARDS, type Streak } from
 import { countMvpAwards, countSosAnswered, getSeasonStandings, getStreak } from "./progress";
 import { getReputation, type Reputation } from "./reviews";
 import { getVenue } from "./venues";
+import { SPORT_LABELS, type Sport } from "./types";
+
+export interface SportSkill {
+  sport: Sport;
+  praises: Reputation["praises"];
+  attributes: { label: string; value: number }[] | null;
+}
 
 /** Profili gösterilecek oyuncunun temel bilgisi (oturumdaki kullanıcı ya da başka bir oyuncu) */
 export interface PlayerBase {
@@ -28,6 +35,10 @@ export interface Profile {
   stats: PlayerStats;
   /** Radar grafiği; takım arkadaşlarından değerlendirme gelmeden boş */
   attributes: { label: string; value: number }[] | null;
+  /** Branşa göre övgüler ve radar grafiği (profildeki branş sekmeleri) */
+  skills: SportSkill[];
+  /** En çok "Geldi" oyu aldığı branş: profil bu sekmeyle açılır */
+  primarySport: Sport;
   /** Takım arkadaşlarından alınan övgüler (sayılarıyla) */
   praises: Reputation["praises"];
   /** Çoğunluk oyuyla "gelmedi" sayıldığı maç sayısı */
@@ -113,6 +124,23 @@ export async function getProfile(player: PlayerBase): Promise<Profile> {
   const level = levelFromXp(totalXp).level;
   await db.query("UPDATE players SET level = $2, rating = $3 WHERE id = $1 AND (level <> $2 OR rating <> $3)", [player.id, level, reputation.reliability]);
 
+  // Branşa göre radar: eksenler o branşın övgüleri + Dakiklik + Güvenilirlik (hepsi takım arkadaşlarının oylarından)
+  const skills: SportSkill[] = (Object.keys(SPORT_LABELS) as Sport[]).map((sport) => ({
+    sport,
+    praises: reputation.bySport[sport].praises,
+    attributes: playerAttributes({
+      praises: reputation.bySport[sport].praises,
+      attendedVotes: reputation.bySport[sport].attendedVotes,
+      confirmed: reputation.confirmed,
+      onTime: reputation.onTime,
+      reliability: reputation.reliability,
+    }),
+  }));
+  const primarySport = skills.reduce(
+    (best, s) => (reputation.bySport[s.sport].attendedVotes > reputation.bySport[best].attendedVotes ? s.sport : best),
+    "futbol" as Sport,
+  );
+
   const mine = standings.entries.find((e) => e.playerId === player.id);
   return {
     id: player.id,
@@ -132,6 +160,8 @@ export async function getProfile(player: PlayerBase): Promise<Profile> {
       onTime: reputation.onTime,
       reliability: reputation.reliability,
     }),
+    skills,
+    primarySport,
     praises: reputation.praises,
     noShows: reputation.noShows,
     recentMatch: recentMatches[0] ?? null,

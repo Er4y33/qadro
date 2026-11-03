@@ -94,7 +94,7 @@ export function onTimeStreak(newestFirst: (boolean | null)[]): number {
 
 export interface AttributeInput {
   /** Övgü türüne göre alınan övgü sayıları */
-  praises: { label: string; count: number }[];
+  praises: { label: string; count: number; axis?: string }[];
   /** Takım arkadaşlarından alınan "Geldi" oyu sayısı */
   attendedVotes: number;
   /** Katılımı onaylanan maçlar ve bunların kaçına zamanında gelindiği */
@@ -115,10 +115,25 @@ export function playerAttributes(input: AttributeInput): { label: string; value:
   if (input.attendedVotes === 0) return null;
   const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
   return [
-    ...input.praises.map((p) => ({ label: p.label, value: pct(p.count, input.attendedVotes) })),
+    ...input.praises.map((p) => ({ label: p.axis ?? p.label, value: pct(p.count, input.attendedVotes) })),
     { label: "Dakiklik", value: pct(input.onTime, input.confirmed) },
     { label: "Güvenilirlik", value: Math.round(input.reliability * 20) },
   ];
+}
+
+/* ───────────── Güvenilirlik kademesi ───────────── */
+
+export type ReliabilityTier = { id: "efsanevi" | "guvenilir" | "gelisiyor" | "riskli"; label: string };
+
+/**
+ * Profildeki puanın altında görünen kademe (Melih'in tasarımındaki "EFSANEVİ").
+ * Puan takım arkadaşlarının Geldi/Gelmedi oylarından geldiği için kademe de oyla kazanılır, satın alınamaz.
+ */
+export function reliabilityTier(score: number): ReliabilityTier {
+  if (score >= 4.7) return { id: "efsanevi", label: "Efsanevi" };
+  if (score >= 4.0) return { id: "guvenilir", label: "Güvenilir" };
+  if (score >= 3.0) return { id: "gelisiyor", label: "Gelişiyor" };
+  return { id: "riskli", label: "Riskli" };
 }
 
 /* ───────────── Maçın Oyuncusu (MVP) ───────────── */
