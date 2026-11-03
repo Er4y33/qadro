@@ -12,39 +12,53 @@ export interface Praise {
   id: string;
   label: string;
   emoji: string;
-  /** Radar grafiğinde bu övgünün beslediği eksen */
-  axis: string;
+  /** Radar grafiğinde bu övgünün beslediği eksen (Centilmen'de yok) */
+  axis?: string;
 }
 
-const CENTILMEN: Praise = { id: "centilmen", label: "Centilmen", emoji: "🤝", axis: "Fair Play" };
+/** Centilmenlik her branşta ortaktır; bir beceri değil, tutumdur: radar grafiğinde ekseni yoktur */
+const CENTILMEN: Praise = { id: "centilmen", label: "Centilmen", emoji: "🤝" };
 
 /**
- * Branşa özel övgüler (Melih'in Kasım 2026 tasarımı). Centilmenlik her branşta ortaktır.
+ * Branşa özel övgüler (Melih'in Kasım 2026 tasarımı ve ekip kararı).
+ * Her branşın 6 beceri övgüsü radar grafiğinin 6 eksenini besler (altıgen); Centilmen ortaktır.
  * Kimlikler veritabanında saklanır; futbolun eski kimlikleri (dinamik, kaya-gibi, taktiksel) korunmuştur.
  */
 export const SPORT_PRAISES: Record<Sport, Praise[]> = {
   futbol: [
     CENTILMEN,
     { id: "dinamik", label: "Dinamik", emoji: "⚡", axis: "Hız" },
-    { id: "kaya-gibi", label: "Kaya Gibi", emoji: "🧱", axis: "Savunma" },
-    { id: "taktiksel", label: "Taktiksel", emoji: "🧠", axis: "Taktik" },
+    { id: "refleks-ustasi", label: "Refleks Ustası", emoji: "🧤", axis: "Refleks" },
+    { id: "guc-merkezi", label: "Güç Merkezi", emoji: "💪", axis: "Fizik" },
+    { id: "kaya-gibi", label: "Kaya Gibi", emoji: "🧱", axis: "Defans" },
+    { id: "pas-makinesi", label: "Pas Makinesi", emoji: "🎯", axis: "Pas" },
+    { id: "taktiksel", label: "Taktiksel", emoji: "🧠", axis: "Vizyon" },
   ],
   basketbol: [
     CENTILMEN,
     { id: "keskin-sutor", label: "Keskin Şutör", emoji: "🎯", axis: "Şut" },
-    { id: "oyun-kurucu", label: "Oyun Kurucu", emoji: "🧠", axis: "Asist" },
     { id: "ribaund-canavari", label: "Ribaund Canavarı", emoji: "🧱", axis: "Ribaund" },
+    { id: "guc-merkezi", label: "Güç Merkezi", emoji: "💪", axis: "Fizik" },
+    { id: "savunma-duvari", label: "Savunma Duvarı", emoji: "🛡️", axis: "Savunma" },
+    { id: "oyun-kurucu", label: "Oyun Kurucu", emoji: "🧠", axis: "Asist" },
+    { id: "top-hirsizi", label: "Top Hırsızı", emoji: "🦊", axis: "T. Çalma" },
   ],
   voleybol: [
     CENTILMEN,
     { id: "smac-ustasi", label: "Smaç Ustası", emoji: "💥", axis: "Smaç" },
     { id: "blok-duvari", label: "Blok Duvarı", emoji: "🧱", axis: "Blok" },
+    { id: "kedi-refleksi", label: "Kedi Refleksi", emoji: "🐱", axis: "Refleks" },
+    { id: "manset-ustasi", label: "Manşet Ustası", emoji: "🙌", axis: "Manşet" },
     { id: "altin-pas", label: "Altın Pas", emoji: "🎯", axis: "Pas" },
+    { id: "servis-makinesi", label: "Servis Makinesi", emoji: "🚀", axis: "Servis" },
   ],
   tenis: [
     CENTILMEN,
     { id: "servis-canavari", label: "Servis Canavarı", emoji: "🚀", axis: "Servis" },
-    { id: "file-ustasi", label: "File Ustası", emoji: "🎾", axis: "Vole" },
+    { id: "forehand-ustasi", label: "Forehand Ustası", emoji: "💪", axis: "Forehand" },
+    { id: "backhand-ustasi", label: "Backhand Ustası", emoji: "🎾", axis: "Backhand" },
+    { id: "file-ustasi", label: "File Ustası", emoji: "🕸️", axis: "Vole" },
+    { id: "simsek", label: "Şimşek", emoji: "⚡", axis: "Hız" },
     { id: "yorulmaz", label: "Yorulmaz", emoji: "🔋", axis: "Kondisyon" },
   ],
 };

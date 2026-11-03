@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { SportSkill } from "@/lib/players";
 import { SPORT_EMOJI } from "@/lib/sports";
 import { SPORT_LABELS } from "@/lib/types";
@@ -9,15 +9,26 @@ import { SectionTitle, cn } from "./ui";
 
 /**
  * Profildeki branş sekmeleri: her branşın kendi övgüleri ve radar eksenleri vardır
- * (basketbolda Şut / Asist / Ribaund, voleybolda Smaç / Blok / Pas, tenis'te Servis / Vole / Kondisyon).
- * Sekme, o branşın vurgu rengini alır (data-sport).
+ * (6 eksenli altıgen: ör. tenis Servis, Forehand, Backhand, Vole, Hız, Kondisyon).
+ * Ekip kararı ("Active Context"): seçilen sekme bütün profil ekranının rengini değiştirir
+ * (voleybol sekmesi → profil mor). Profilden çıkınca önceki tema geri gelir.
  */
 export function SportSkills({ skills, initial }: { skills: SportSkill[]; initial: SportSkill["sport"] }) {
   const [sport, setSport] = useState(initial);
   const skill = skills.find((s) => s.sport === sport) ?? skills[0];
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.dataset.sport;
+    root.dataset.sport = sport;
+    return () => {
+      if (previous) root.dataset.sport = previous;
+      else delete root.dataset.sport;
+    };
+  }, [sport]);
+
   return (
-    <div data-sport={sport}>
+    <div>
       <div className="mt-6 flex gap-2 overflow-x-auto lg:mt-0" role="tablist" aria-label="Branş">
         {skills.map((s) => (
           <button
@@ -39,7 +50,7 @@ export function SportSkills({ skills, initial }: { skills: SportSkill[]; initial
 
       <section className="mt-4">
         <SectionTitle>Övgüler</SectionTitle>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
           {skill.praises.map((p) => (
             <div
               key={p.id}
@@ -68,8 +79,8 @@ export function SportSkills({ skills, initial }: { skills: SportSkill[]; initial
         </div>
         {skill.attributes && (
           <p className="mt-2 text-xs text-muted">
-            Takım arkadaşlarının oylarından hesaplanır: her eksen, {SPORT_LABELS[sport].toLocaleLowerCase("tr")} maçlarındaki
-            &quot;Geldi&quot; oylarının yüzde kaçında o övgünün verildiğini gösterir. Kendini puanlayamazsın.
+            Her eksen bir beceri övgüsüdür ve {SPORT_LABELS[sport].toLocaleLowerCase("tr")} maçlarında takım arkadaşlarından
+            gelir. En çok övgü aldığın beceri en dışta, diğerleri ona oranla çizilir. Kendini puanlayamazsın.
           </p>
         )}
       </section>

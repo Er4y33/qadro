@@ -212,9 +212,12 @@ export async function seedHistory(db: Db) {
       const attended = !m.absent?.includes(target);
       const late = attended && !!m.late?.includes(target);
       const spec = SPECIALTY[target];
+      // Uzmanlık övgüsü + maça göre değişen iki beceri övgüsü: radarın 6 ekseni de dolsun
+      const skills = praisesFor(m.sport).filter((p) => p.axis);
+      const seed = m.players.indexOf(target) + HISTORY.indexOf(m);
+      const varied = [skills[seed % skills.length].id, skills[(seed + 2) % skills.length].id];
       chosen.forEach((reviewer, k) => {
-        const second = spec ? PRAISE_IDS[(PRAISE_IDS.indexOf(spec) + 1) % PRAISE_IDS.length] : null;
-        const praise = attended ? forSport([spec, second, spec, null][k], m.sport) : null;
+        const praise = attended ? [forSport(spec, m.sport), varied[0], varied[1], null][k] : null;
         reviews.push([m.id, reviewer, target, attended, praise, late, startsAt]);
       });
     }

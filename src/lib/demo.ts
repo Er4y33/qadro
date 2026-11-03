@@ -2,6 +2,7 @@ import "server-only";
 import { getDb } from "./db";
 import { seedApprovalDemo } from "./db/seed";
 import { syncLevels } from "./progress";
+import { praisesFor } from "./praise";
 
 /*
  * Rehberli demo turu için örnek veri.
@@ -42,6 +43,7 @@ export async function resetDemo(now = new Date()) {
     venue: string;
     title: string;
     format: string;
+    sport?: string;
     startsAt: Date;
     capacity: number;
     organizer: string;
@@ -50,8 +52,8 @@ export async function resetDemo(now = new Date()) {
   }) => {
     await db.query(
       `INSERT INTO matches (id, venue_id, title, sport, format, starts_at, price, capacity, min_level, organizer_id, note)
-       VALUES ($1, $2, $3, 'futbol', $4, $5, 100, $6, 5, $7, $8)`,
-      [m.id, m.venue, m.title, m.format, m.startsAt.toISOString(), m.capacity, m.organizer, m.note],
+       VALUES ($1, $2, $3, $9, $4, $5, 100, $6, 5, $7, $8)`,
+      [m.id, m.venue, m.title, m.format, m.startsAt.toISOString(), m.capacity, m.organizer, m.note, m.sport ?? "futbol"],
     );
     for (const [i, [player, position, x, y]] of m.lineup.entries()) {
       await db.query(
@@ -70,7 +72,7 @@ export async function resetDemo(now = new Date()) {
 
   // 1) Son üç haftanın maçları: herkesin katılımı 3 takım arkadaşının "Geldi" oyuyla onaylı
   const historyMvp = ["oguz", "can", "ahmet"];
-  const praises = ["taktiksel", "dinamik", "kaya-gibi", "centilmen"];
+  const praises = praisesFor("futbol").map((p) => p.id); // 6 beceri + Centilmen: radarın bütün eksenleri dolsun
   for (let week = 1; week <= 3; week++) {
     const id = `demo-gecmis-${week}`;
     await insertMatch({
@@ -88,12 +90,55 @@ export async function resetDemo(now = new Date()) {
     for (const [i, target] of ids.entries()) {
       for (let k = 1; k <= 3; k++) {
         const reviewer = ids[(i + k) % ids.length];
-        await review(id, reviewer, target, true, k === 1 ? praises[(i + week) % praises.length] : null);
+        await review(id, reviewer, target, true, k < 3 ? praises[(i + week + k * 2) % praises.length] : null);
       }
     }
     const mvp = historyMvp[week - 1];
     const voters = ids.filter((p) => p !== mvp).slice(0, 2);
     for (const voter of voters) await mvpVote(id, voter, mvp);
+  }
+
+  // 1b) Basketbol ve tenis geçmişi: profildeki branş sekmelerinde de radar ve Maç Geçmişi dolu görünsün
+  const others: { id: string; sport: "basketbol" | "tenis"; venue: string; title: string; format: string; days: number; lineup: Lineup }[] = [
+    {
+      id: "demo-gecmis-basket",
+      sport: "basketbol",
+      venue: "kmaras-kapali",
+      title: "Salı Akşamı Basket",
+      format: "3v3",
+      days: 10,
+      lineup: [["atahan", "Şut", 17, 60], ["ahmet", "OK", 50, 82], ["can", "Pvt", 35, 30], ["emre"], ["burak"], ["mert"]],
+    },
+    {
+      id: "demo-gecmis-tenis",
+      sport: "tenis",
+      venue: "elbistan-tenis",
+      title: "Hafta Sonu Çiftler",
+      format: "Çiftler",
+      days: 5,
+      lineup: [["atahan", "Kort", 72, 80], ["emre", "Kort", 28, 80], ["can", "Kort", 28, 20], ["mert", "Kort", 72, 20]],
+    },
+  ];
+  for (const o of others) {
+    await insertMatch({
+      id: o.id,
+      venue: o.venue,
+      title: o.title,
+      format: o.format,
+      sport: o.sport,
+      startsAt: new Date(now.getTime() - o.days * 24 * HOUR),
+      capacity: o.lineup.length,
+      organizer: o.lineup[1][0],
+      note: "Demo turu için örnek geçmiş maç.",
+      lineup: o.lineup,
+    });
+    const ids = o.lineup.map(([p]) => p);
+    const skills = praisesFor(o.sport).filter((p) => p.axis).map((p) => p.id);
+    for (const [i, target] of ids.entries()) {
+      for (let k = 1; k <= 3; k++) {
+        await review(o.id, ids[(i + k) % ids.length], target, true, skills[(i + k * 2) % skills.length]);
+      }
+    }
   }
 
   // 2) Dört saat önce oynanmış, Atahan'ın değerlendireceği maç (akış, başlamasının üzerinden 3 saat geçen maçları göstermez)

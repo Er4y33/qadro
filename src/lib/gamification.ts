@@ -95,30 +95,23 @@ export function onTimeStreak(newestFirst: (boolean | null)[]): number {
 export interface AttributeInput {
   /** Övgü türüne göre alınan övgü sayıları */
   praises: { label: string; count: number; axis?: string }[];
-  /** Takım arkadaşlarından alınan "Geldi" oyu sayısı */
+  /** Takım arkadaşlarından alınan "Geldi" oyu sayısı (bu branşta) */
   attendedVotes: number;
-  /** Katılımı onaylanan maçlar ve bunların kaçına zamanında gelindiği */
-  confirmed: number;
-  onTime: number;
-  /** 0–5 güvenilirlik puanı */
-  reliability: number;
 }
 
 /**
- * Radar grafiğindeki 0–100 arası değerler. Hepsi takım arkadaşlarının oylarından gelir; oyuncu kendini puanlayamaz.
- * - Övgü eksenleri: "Geldi" oylarının yüzde kaçında bu övgü verildi.
- * - Dakiklik: onaylanan maçların yüzde kaçına zamanında gelindi.
- * - Güvenilirlik: 0–5 puanın yüzdelik karşılığı.
- * Hiç oy alınmadıysa null (grafik yerine açıklama gösterilir).
+ * Radar grafiğindeki 0–100 arası değerler: branşın 6 beceri ekseni (ekip kararı: altıgen radar).
+ * Her eksen bir övgüden beslenir ve takım arkadaşlarının oylarından gelir; oyuncu kendini puanlayamaz.
+ * Değer, oyuncunun güçlü yönlerinin şeklini gösterir: en çok övgü alınan beceri 100, diğerleri ona oranla.
+ * Hiç övgü almamış bir eksen 0'dır; bir maçta tek övgü alan oyuncunun grafiği tek eksende uzar (dürüst bir az veri görüntüsü).
+ * Ekseni olmayan övgüler (Centilmen) grafiğe girmez. Dakiklik ve güvenilirlik profilde ayrıca gösterilir.
+ * Bu branşta hiç "Geldi" oyu ya da beceri övgüsü yoksa null (grafik yerine açıklama gösterilir).
  */
 export function playerAttributes(input: AttributeInput): { label: string; value: number }[] | null {
-  if (input.attendedVotes === 0) return null;
-  const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : 0);
-  return [
-    ...input.praises.map((p) => ({ label: p.axis ?? p.label, value: pct(p.count, input.attendedVotes) })),
-    { label: "Dakiklik", value: pct(input.onTime, input.confirmed) },
-    { label: "Güvenilirlik", value: Math.round(input.reliability * 20) },
-  ];
+  const skills = input.praises.filter((p) => p.axis);
+  const max = Math.max(0, ...skills.map((p) => p.count));
+  if (input.attendedVotes === 0 || max === 0) return null;
+  return skills.map((p) => ({ label: p.axis!, value: Math.round((p.count / max) * 100) }));
 }
 
 /* ───────────── Güvenilirlik kademesi ───────────── */

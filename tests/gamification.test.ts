@@ -161,21 +161,22 @@ describe("Zamanında gelme ve Demir Adam serisi", () => {
 
 describe("Oyuncu özellikleri (radar)", () => {
   const praises = [
-    { label: "Centilmen", count: 3 },
-    { label: "Dinamik", count: 0 },
-    { label: "Kaya Gibi", count: 1 },
-    { label: "Taktiksel", count: 6 },
+    { label: "Centilmen", count: 9 },
+    { label: "Dinamik", axis: "Hız", count: 2 },
+    { label: "Kaya Gibi", axis: "Defans", count: 0 },
+    { label: "Taktiksel", axis: "Vizyon", count: 4 },
   ];
 
-  it("hiç oy almayan oyuncunun grafiği yoktur", () => {
-    expect(playerAttributes({ praises, attendedVotes: 0, confirmed: 0, onTime: 0, reliability: 4 })).toBeNull();
+  it("hiç oy ya da beceri övgüsü almayan oyuncunun grafiği yoktur", () => {
+    expect(playerAttributes({ praises, attendedVotes: 0 })).toBeNull();
+    expect(playerAttributes({ praises: praises.map((p) => ({ ...p, count: 0 })), attendedVotes: 5 })).toBeNull();
   });
 
-  it("değerler 0–100 arası yüzdedir ve oylardan hesaplanır", () => {
-    const attrs = playerAttributes({ praises, attendedVotes: 12, confirmed: 4, onTime: 3, reliability: 4.5 })!;
-    expect(attrs.find((a) => a.label === "Taktiksel")?.value).toBe(50); // 6 / 12
-    expect(attrs.find((a) => a.label === "Dakiklik")?.value).toBe(75); // 3 / 4
-    expect(attrs.find((a) => a.label === "Güvenilirlik")?.value).toBe(90); // 4.5 / 5
+  it("eksenler beceri övgüleridir; en güçlü beceri 100, diğerleri ona oranla", () => {
+    const attrs = playerAttributes({ praises, attendedVotes: 12 })!;
+    expect(attrs.map((a) => a.label)).toEqual(["Hız", "Defans", "Vizyon"]); // Centilmen'in ekseni yok
+    expect(attrs.find((a) => a.label === "Vizyon")?.value).toBe(100);
+    expect(attrs.find((a) => a.label === "Hız")?.value).toBe(50);
     expect(attrs.every((a) => a.value >= 0 && a.value <= 100)).toBe(true);
   });
 });
@@ -204,20 +205,19 @@ describe("Branşa özel saha, övgü ve kademe (Kasım 2026 tasarımı)", () => 
   });
 
   it("her branşın övgüleri farklıdır, Centilmen ortaktır ve kimlikler benzersizdir", () => {
-    expect(praisesFor("basketbol").map((p) => p.label)).toEqual(["Centilmen", "Keskin Şutör", "Oyun Kurucu", "Ribaund Canavarı"]);
+    expect(praisesFor("basketbol").map((p) => p.label)).toContain("Keskin Şutör");
+    expect(praisesFor("basketbol")[0].id).toBe("centilmen");
     expect(praisesFor("voleybol").some((p) => p.id === "kaya-gibi")).toBe(false);
     expect(new Set(ALL_PRAISES.map((p) => p.id)).size).toBe(ALL_PRAISES.length);
   });
 
-  it("radar eksenleri övgünün eksen adını kullanır", () => {
-    const attrs = playerAttributes({
-      praises: praisesFor("basketbol").map((p) => ({ ...p, count: 2 })),
-      attendedVotes: 4,
-      confirmed: 1,
-      onTime: 1,
-      reliability: 5,
-    })!;
-    expect(attrs.map((a) => a.label)).toEqual(["Fair Play", "Şut", "Asist", "Ribaund", "Dakiklik", "Güvenilirlik"]);
+  it("her branşın radarı 6 eksenli bir altıgendir (tenis: Servis, Forehand, Backhand, Vole, Hız, Kondisyon)", () => {
+    for (const sport of ["futbol", "basketbol", "voleybol", "tenis"] as const) {
+      const attrs = playerAttributes({ praises: praisesFor(sport).map((p) => ({ ...p, count: 1 })), attendedVotes: 4 })!;
+      expect(attrs).toHaveLength(6);
+    }
+    const tennis = playerAttributes({ praises: praisesFor("tenis").map((p) => ({ ...p, count: 1 })), attendedVotes: 4 })!;
+    expect(tennis.map((a) => a.label)).toEqual(["Servis", "Forehand", "Backhand", "Vole", "Hız", "Kondisyon"]);
   });
 
   it("güvenilirlik kademesi: 4.7 ve üstü Efsanevi", () => {

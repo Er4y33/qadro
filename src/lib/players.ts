@@ -131,9 +131,6 @@ export async function getProfile(player: PlayerBase): Promise<Profile> {
     attributes: playerAttributes({
       praises: reputation.bySport[sport].praises,
       attendedVotes: reputation.bySport[sport].attendedVotes,
-      confirmed: reputation.confirmed,
-      onTime: reputation.onTime,
-      reliability: reputation.reliability,
     }),
   }));
   const primarySport = skills.reduce(
@@ -154,11 +151,8 @@ export async function getProfile(player: PlayerBase): Promise<Profile> {
     mvpAwards,
     stats,
     attributes: playerAttributes({
-      praises: reputation.praises,
-      attendedVotes: reputation.attendedVotes,
-      confirmed: reputation.confirmed,
-      onTime: reputation.onTime,
-      reliability: reputation.reliability,
+      praises: reputation.bySport[primarySport].praises,
+      attendedVotes: reputation.bySport[primarySport].attendedVotes,
     }),
     skills,
     primarySport,
