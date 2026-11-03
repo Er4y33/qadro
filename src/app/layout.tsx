@@ -35,7 +35,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="tr" data-theme="dark" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* suppressHydrationWarning: bazı tarayıcı eklentileri bu betiği değiştirip zararsız bir uyarıya yol açıyor */}
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
         {/* Mobil öncelikli, masaüstünde kenar menülü tam ekran (src/components/AppFrame.tsx) */}
