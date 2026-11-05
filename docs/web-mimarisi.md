@@ -94,7 +94,7 @@ Qadro **ikisini birlikte** kullanır. Next.js her sayfa için ayrı strateji se�
 | Strateji | Açılımı | Nerede, ne zaman üretilir? | Qadro'daki sayfa | Koddaki karşılığı |
 |---|---|---|---|---|
 | **SSG** | Static Site Generation | Sunucuda, **build anında** bir kez | `/giris`, `/hosgeldin`, `/saha/[id]` | Varsayılan; dinamik sayfalarda `generateStaticParams()` |
-| **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/`, `/mac/[id]`, `/sohbetler`, `/profil`, `/oyuncu/[id]`, `/bildirimler`: hep güncel veri | `export const dynamic = "force-dynamic"` |
+| **SSR** | Server-Side Rendering | Sunucuda, **her istekte** | `/`, `/mac/[id]`, `/sohbetler`, `/profil`, `/profil/gecmis`, `/takimlar`, `/oyuncu/[id]`, `/bildirimler`: hep güncel veri | `export const dynamic = "force-dynamic"` |
 | **CSR** | Client-Side Rendering | **Tarayıcıda**, JavaScript ile | Maç oluşturma formu, harita, Filtreler, sohbet odasındaki yeni mesaj sorgusu | Dosyanın başında `"use client"` |
 | **ISR** | Incremental Static Regeneration | Statik, belirli aralıklarla **arka planda yenilenir** | `/siralama`: Şehrin En İyileri (sorgu en fazla 5 dakikada bir çalışır, "Sen" satırı tarayıcıda eklenir) | `export const revalidate = 300` |
 
@@ -139,7 +139,7 @@ Kök düzen kullanıcı bilgisini sunucuda okumaz (kenar menüdeki ad istemcide 
 
 ### Testler ve sürekli entegrasyon (CI)
 
-`npm test` 81 testi çalıştırır (Vitest). Oyun kuralları saf fonksiyon olarak yazıldığı için (`src/lib/gamification.ts`) doğrudan test edilir. Veritabanı senaryoları ise bellekte açılan PGlite üzerinde koşar; gerçek veritabanına dokunmaz.
+`npm test` 93 testi çalıştırır (Vitest). Oyun kuralları saf fonksiyon olarak yazıldığı için (`src/lib/gamification.ts`) doğrudan test edilir. Veritabanı senaryoları ise bellekte açılan PGlite üzerinde koşar; gerçek veritabanına dokunmaz.
 
 | Test edilen kural | Neden önemli |
 |---|---|
@@ -152,6 +152,8 @@ Kök düzen kullanıcı bilgisini sunucuda okumaz (kenar menüdeki ad istemcide 
 | 5 hatalı şifre denemesinden sonra giriş kilitlenir | Kaba kuvvet saldırısına karşı (`429`) |
 | Onaylı katılımda istekleri yalnızca organizatör yönetir | Yetkilendirme (`403`) |
 | Filtrelerde "bugün" Türkiye saatine göre hesaplanır | Saat dilimi hatası (UTC'de gece yarısı) |
+| Basketbol maçında futbol övgüsü verilemez | Branşa özel kural (`400`) |
+| Takıma yalnızca birlikte oynanan oyuncu eklenir; davetli sohbeti görür, davetsiz göremez | Spam engeli ve yetkilendirme (`400`, `403`) |
 
 GitHub Actions her push'ta lint → tip kontrolü → test → build adımlarını çalıştırır. Bir adım başarısız olursa GitHub'da kırmızı işaret görünür.
 
@@ -207,6 +209,7 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `join_requests` | Onaylı katılımlı maçlara gelen istekler (`pending` / `approved` / `declined`) |
 | `messages`, `chat_reads` | Takım sohbeti mesajları ve her oyuncunun en son gördüğü mesaj (okunmamış sayısı) |
 | `sessions`, `login_attempts` | Oturumlar (anahtarın özeti) ve hatalı giriş denemeleri |
+| `teams`, `team_members`, `match_invites` | Takımlar (kayıtlı kadrolar), üyeleri ve takımla gönderilen maç davetleri |
 | `user_events` | Kullanıcı davranışları: `match_created`, `match_joined`, `message_sent`… → **dashboard** |
 
 **Eşzamanlılık:** Son boş yere iki kişi aynı anda tıklarsa ikisi de girmesin diye katılma bir **işlem (transaction)** içinde yapılır ve maç satırı `SELECT … FOR UPDATE` ile kilitlenir (`src/lib/matches.ts → joinMatch`). İkinci istek birincinin bitmesini bekler, güncel kayıt sayısını görür ve `409 Conflict` alır. Maç sonu oyları da tek işlemde kaydedilir: ortada hata olursa hiçbiri kaydedilmez (`src/lib/reviews.ts`). İşlem desteği `src/lib/db/index.ts → transaction()` içinde, iki sürücü için de (PGlite ve postgres.js) aynı arayüzle yazıldı.
@@ -216,7 +219,7 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | Metot ve adres | Ne yapar | Yanıtlar |
 |---|---|---|
 | `GET /api/matches` | Maç listesi | `200` |
-| `POST /api/matches` | Maç oluşturur | `201` + `Location` başlığı · `400` doğrulama hatası |
+| `POST /api/matches` | Maç oluşturur; gövdede `teamId` varsa takımın üyelerine davet gider (yanıtta `invited`) | `201` + `Location` başlığı · `400` doğrulama hatası |
 | `GET /api/matches/[id]` | Tek maç | `200` · `404` |
 | `POST /api/matches/[id]/participants` | Maça katılır; onaylı katılımlı maçta istek gönderir | `201` kadrodasın · `202 Accepted` istek organizatöre iletildi · `404` · `409` dolu / zaten kadroda / isteğin zaten var |
 | `DELETE /api/matches/[id]/participants` | Maçtan ayrılır ya da bekleyen isteği geri çeker; `?player=<id>` ile organizatör birini kadrodan çıkarır | `204` · `403` · `404` · `409` organizatör ayrılamaz |
@@ -236,6 +239,8 @@ git push  ──►  GitHub (Er4y33/qadro)  ──►  Vercel  ──►  canlı
 | `GET /api/sos` | Giriş yapan oyuncuya açık S.O.S çağrıları | `200` · `401` |
 | `POST /api/sos` | S.O.S çağrısı başlatır `{ matchId, position }` | `201` · `400` · `401` · `403` kadroda değilsin · `404` · `409` kadro tam / açık çağrı var |
 | `POST /api/sos/[id]/answer` | Çağrıyı kabul eder, kadroya katılır | `201` · `401` · `404` · `409` başkası yanıtladı / maç doldu |
+| `GET /api/teams` · `POST /api/teams` | Üyesi olduğun takımlar · takım kaydet `{ name, sport, memberIds }` | `200` · `201` · `400` birlikte oynamadığın oyuncu · `401` |
+| `DELETE /api/teams/[id]` | Takımı siler (yalnızca kurucu) | `204` · `403` · `404` |
 | `GET /api/season` | İçinde bulunulan sezonun XP sıralaması | `200` |
 | `POST /api/demo/start` | Demo maçlarını yeniden kurar, demo oyuncusu olarak oturum açar | `201` + `Set-Cookie` |
 | `GET /api/health` | Uygulama ve veritabanı durumu (`postgres` = Supabase, `pglite` = gömülü) | `200` · `503` veritabanına ulaşılamıyor |
@@ -311,7 +316,22 @@ Maç kadrosu sohbeti için birkaç saniyelik gecikme kabul edilebilir; gerçek z
 
 `/oyuncu/[id]` bağlantısı WhatsApp'a yapıştırıldığında görünen kart, `src/app/oyuncu/[id]/opengraph-image.tsx` dosyasında sunucuda JSX'ten PNG olarak üretilir (`next/og`). Türkçe harfler için Inter yazı tipi projeyle gelir (`assets/fonts`, OFL lisanslı). "Başarını Paylaş" düğmesi telefonda Web Share API ile işletim sisteminin paylaşım menüsünü açar, masaüstünde bağlantıyı panoya kopyalar.
 
+### Kasım 2026: branşa özel tasarım (Melih'in Figma güncellemesi)
+
+Ayrıntılar: `docs/kasim-tasarim-guncellemesi.md`. Web tarafındaki karşılıkları:
+
+| Yenilik | Nasıl yapıldı |
+|---|---|
+| **Branş temaları** (futbol yeşil, basketbol turuncu, voleybol mor, tenis camgöbeği) | CSS değişkenleri: `data-sport` özniteliği `--primary` rengini değiştirir (`src/app/globals.css`). Ana sayfada filtre `<html>`'e, maç sayfalarında `src/app/mac/[id]/layout.tsx` kapsayıcıya yazar (Active Context). |
+| **Branşa özel saha** (basketbol yarım saha, voleybol filesi, tenis kortu) | Saha çizgileri SVG ile çizilir (`src/components/CourtLines.tsx`), bölgeler veri olarak tutulur (`src/lib/courts.ts`). |
+| **6 eksenli radar** | Her branşın 6 beceri övgüsü radarın eksenleridir (`src/lib/praise.ts`); değerler takım arkadaşlarının oylarından gelir. |
+| **Maç Geçmişi** (`/profil/gecmis`) | SSR; branş filtresi adres parametresiyle (`?brans=basketbol`) sunucuda uygulanır. |
+| **Takımlar** (`/takimlar`) | Kayıtlı kadro → maç oluştururken davet → davetli bildirim alır ve takım sohbetine katılır (`src/lib/teams.ts`). |
+
 ## 8. Sıradaki Adımlar
+
+- [ ] Keşfet'te arama sekmeleri: Tesisler, Oyuncular, Takımlar (Figma tasarımında var)
+- [ ] Maç Oluştur ayrıntıları: süre, aranan mevkiler, tenis için kort zemini ve oyuncu tipi (Rakip / Partner)
 
 - [ ] Şifremi unuttum (e-posta ile sıfırlama), e-posta doğrulama, Google ile giriş
 - [ ] Gerçek zamanlı sohbet (Supabase Realtime) ve anlık bildirim (Web Push)
